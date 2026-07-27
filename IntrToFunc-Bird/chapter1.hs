@@ -2,10 +2,10 @@
 double :: (a -> a) -> a -> a
 double f x = f (f x)
 
-square :: Int -> Int 
+square :: Float -> Float 
 square x = x*x
 
-quad :: Int -> Int 
+quad :: Float -> Float 
 quad = double square
 
 
