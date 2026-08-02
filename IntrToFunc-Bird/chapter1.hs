@@ -16,3 +16,12 @@ greater x y = if x > y then x else y
 -- 1.3-----------------
 areaOfACircle :: Float -> Float 
 areaOfACircle r = 22/7 * square r
+
+
+-- 4.1-------------------
+curry :: ((a, b) -> c) -> a -> b -> c 
+curry f x y = f (x, y)
+
+uncurry :: (a -> b -> c) -> (a, b) -> c
+uncurry f (x, y) = f x y
+
