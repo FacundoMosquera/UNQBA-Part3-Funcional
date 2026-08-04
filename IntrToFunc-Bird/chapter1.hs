@@ -120,3 +120,30 @@ abs :: Integer -> Integer
 abs n 
     | n >= 0 =  n 
     | n < 0  = -n
+
+-- 6. 1 ------------------
+const :: a -> b -> a
+const x y = x
+
+subst :: (a -> b -> c) -> (a -> b) -> a -> c
+subst f g x = f x (g x)
+
+apply :: (a -> b) -> a -> b
+apply f x = f x
+
+flip :: (b -> a -> c) -> a -> b -> c
+flip f x y = f y x
+
+-- 6.2 -------------------
+swap :: (a, b) -> (b,a)
+swap (x,y) = (y,x)
+
+-- 6.3 -------------------
+strange :: ((a -> b) -> a) -> (a -> b) -> b
+strange f g = g (f g)
+
+--stranger f = f f  #Da error por tipo infinito
+
+-- 6.4 -------------------
+square'' :: Num a => a -> a
+square'' x = x * x
