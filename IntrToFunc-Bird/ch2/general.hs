@@ -6,5 +6,3 @@ class Eq a where
 instance Eq Bool where
     (==) x y = (x && y) || (not x && not y)
     (!=) x y = not (x == y)
-
-
