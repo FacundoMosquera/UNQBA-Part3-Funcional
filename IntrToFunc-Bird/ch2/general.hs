@@ -37,3 +37,13 @@ instance Enum Day where
 
     No compila porque no declaré Eq Int para que se pueda realizar la operación.    
 -}
+
+f :: Int -> Int 
+f x = x + 1
+
+g :: Int -> Int 
+g x = x + 2
+
+pair :: (a -> b, a -> c) -> a -> (b, c)
+pair (f, g) x = (f x, g x)
+

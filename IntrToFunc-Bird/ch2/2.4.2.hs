@@ -1,0 +1,1 @@
+data Triple a b c = MkTriple a b c
