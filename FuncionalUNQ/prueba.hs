@@ -11,3 +11,16 @@ doble x = x + x
 uflip :: ((b,a) -> c) -> ((a,b) -> c)
 uflip f = g 
         where g p = f (swap p)
+
+apply :: (a -> b) -> (a -> b)
+apply f = g 
+        where g x = f x
+
+flip :: (b -> a -> c) -> a -> b -> c 
+flip f = h 
+        where h x = k 
+                where k y = (f y) x
+
+appFork :: (a -> b, a -> c) -> (a -> (b, c))
+appFork (f, g) = h 
+                where h x = (f x, g x) 
