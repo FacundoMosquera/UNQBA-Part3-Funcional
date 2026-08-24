@@ -11,3 +11,11 @@ deriveN' n f = derive (deriveN (n-1) f)
 
 doble :: Num a => a -> a 
 doble x = x + x
+
+uderive :: (Float -> Float, Float) -> Float 
+uderive (f,x) = (f (x+h) - f x) / h where h = 0.000001
+
+uderiveN :: (Int, Float -> Float, Float) -> Float
+uderiveN (0,f,x) = f x
+uderiveN (n,f,x) = let df = \x -> uderive (f, x)
+                    in uderiveN (n-1, df, x)
