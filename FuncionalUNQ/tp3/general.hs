@@ -1,0 +1,13 @@
+derive :: (Float -> Float) -> (Float -> Float)
+derive f x = (f (x+h) - f x) / h where h = 0.000001
+
+deriveN :: Int -> (Float -> Float) -> (Float -> Float)
+deriveN 0 f = f 
+deriveN n f = deriveN (n-1) (derive f)
+
+deriveN' :: Int -> (Float -> Float) -> (Float -> Float)
+deriveN' 0 f = f 
+deriveN' n f = derive (deriveN (n-1) f)
+
+doble :: Num a => a -> a 
+doble x = x + x
