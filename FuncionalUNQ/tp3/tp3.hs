@@ -1,3 +1,4 @@
+import Prelude hiding (id)
 -- EJERCICIO 1
 curry :: ((a,b) -> c) -> a -> b -> c 
 curry f x y = f (x,y)
@@ -109,5 +110,74 @@ snd :: (t1, t2) -> t2
 --------------------------------------------
 uncurry curry snd :/: 
 
+c) 
+    (apply id) ((id apply) apply)
+
+    id :: a -> a
+    apply :: (a1 -> b1) -> a1 -> b1
+    ------------------------------- a <- (a1 -> b1) -> a1 -> b1
+    id apply :: (a1 -> b1) -> a1 -> b1
+
+
+    id apply :: (a1 -> b1) -> a1 -> b1
+    apply :: (a2 -> b2) -> a2 -> b2
+    ---------------------------------- a1 <- (a2 -> b2), b1 <- (a2 -> b2)
+    (id apply) apply :: (a2 -> b2) -> a2 -> b2
+
+
+    apply :: (a3 -> b3) -> a3 -> b3 
+    id :: a' -> a'
+    ------------------------------- a3 <- a', b3 <- a'
+    apply id :: a' -> a'
+
+
+    apply id :: a' -> a'
+    (id apply) apply :: (a2 -> b2) -> a2 -> b2
+    --------------------------------------------- a' <- (a2 -> b2) -> a2 -> b2
+    (apply id) ((id apply) apply) :: (a2 -> b2) -> a2 -> b2
+
+
+d)    
+     compose (compose doble doble) :: (a -> Int) -> a -> Int ? (calculado a ojo)
+
+    compose :: (b -> c) -> (a -> b) -> a -> c
+    doble :: Int -> Int
+    ----------------------------------------- b <- Int, c <- Int
+    compose doble :: (a -> Int) -> a -> Int
+
+
+    compose doble :: (a -> Int) -> a -> Int 
+    doble :: Int -> Int 
+    --------------------------------------- a <- Int
+    compose doble doble :: Int -> Int
+
+    compose :: (b' -> c') -> (a' -> b') -> a' -> c'
+    compose doble doble :: Int -> Int 
+    ----------------------------------------------- b' <- Int, c' <- Int
+    compose (compose doble doble) :: (a' -> Int) -> a' -> Int
+
+
+
+e)
+
+    (compose compose) doble doble 
+
+
+
+    compose :: (b' -> c') -> (a' -> b') -> a' -> c'
+    compose :: (b -> c) -> (a -> b) -> a -> c
+    ----------------------------------------------- b' <- (b -> c), c' <- (a -> b) -> a -> c
+    compose compose :: (a' -> (b -> c)) -> a' -> (a -> b) -> a -> c
+
+    compose compose :: (a' -> b -> c) -> a' -> (a -> b) -> a -> c
+    doble :: Int -> Int 
+    ---------------------------------------------------------------
+    (compose compose) doble :/:
+
 
 -}
+
+-- EJERCICIO 7
+many :: Int -> (a -> a) -> (a -> a) 
+many 0 f = id 
+many n f = compose f (many (n-1) f)
