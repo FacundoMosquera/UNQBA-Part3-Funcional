@@ -277,11 +277,8 @@ empty :: Set a
 empty = S (const False)
 
 --c)  MAL
-singleton :: a -> Set a 
-singleton x = let elem = x in
-                        S (\y -> case y of 
-                        elem -> True 
-                        _ -> False)
+singleton ::Eq a => a -> Set a 
+singleton x = S (x==)
 
 --d)
 union :: Set a -> Set a -> Set a
