@@ -24,3 +24,10 @@ flip f = h
 appFork :: (a -> b, a -> c) -> (a -> (b, c))
 appFork (f, g) = h 
                 where h x = (f x, g x) 
+
+appDup :: ((a,a) -> b) -> a -> b
+appDup f = g 
+          where g x = f (x,x)
+
+twice' :: (a -> a) -> a -> a 
+twice' = appDup (uncurry (.))
