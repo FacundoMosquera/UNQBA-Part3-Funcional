@@ -710,19 +710,6 @@ LADO DER
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 ------------------------------- SECCIÓN 3 -------------------------------
 --EJERCICIO 1
 data Dungeon a = Habitacion a 
@@ -985,6 +972,32 @@ Dem.
 
 
 
+
+
+
+
+
+
+-- EJERCICIO 5
+data VariasCosas a b = Objeto a | Criatura b 
+data Monstruo = Gargola | Dragon | Troll 
+
+
+{-
+a)      cantidadDePuntosCon (Criatura Troll) (Habitacion (Objeto Oro)) = 0
+
+
+Dem. 
+     
+        cantidadDePuntosCon (Criatura Troll) (Habitacion (Objeto Oro))
+    =                                       (def. cantidadDePuntosCon, 1° ecuación)
+        unoSi (Criatura Troll == Objeto Oro)
+    =                                       (==)
+        unoSi False 
+    =                                       (def. unoSi, 2° ecuación)
+        0
+
+-}
 
 
 
