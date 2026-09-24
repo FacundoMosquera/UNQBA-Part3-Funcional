@@ -97,7 +97,7 @@ conDescripcionMejorada Prepizza   = Prepizza
 conDescripcionMejorada (Capa i p) = compAceitunas i (conDescripcionMejorada p)
 
 compAceitunas :: Ingrediente -> Pizza -> Pizza 
-compAceitunas (Aceitunas n) (Capa (Aceitunas m) p) = Capa (Aceitunas (n+m) p)
+compAceitunas (Aceitunas n) (Capa (Aceitunas m) p) = Capa (Aceitunas (n+m)) p
 compAceitunas i p = Capa i p
 
 
