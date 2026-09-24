@@ -724,3 +724,267 @@ LADO DER
 
 
 ------------------------------- SECCIÓN 3 -------------------------------
+--EJERCICIO 1
+data Dungeon a = Habitacion a 
+               | Pasaje (Maybe a) (Dungeon a)
+               | Bifurcacion (Maybe a) (Dungeon a) (Dungeon a)
+
+{-
+    Dungeon a es un conjunto inductivo con una regla base y dos reglas inductivas.
+    Regla base: Habitacion a forma parte de Dungeon a.
+    Regla inductiva 1: Si d forma parte de Dungeon a, entonces Pasaje (Maybe a) d también forma parte.
+    Regla inductiva 2: Si d1, d2 forman parte de Dungeon a, entonces Bifurcacion (Maybe a) d1 d2 también forma parte.
+-}
+
+
+{-
+    EJERCICIO 2
+
+fD :: Dungeon a -> b
+fD (Habitacion x)         = ...
+fD (Pasaje mx d)          = ... mx ... fD d 
+fD (Bifurcacion mx d1 d2) = ... mx ... fD d1 ... fD d2
+-}
+
+
+
+--EJERCICIO 3
+--a)
+cantidadDeBifurcaciones :: Dungeon a -> Int 
+cantidadDeBifurcaciones (Habitacion x)         = 0
+cantidadDeBifurcaciones (Pasaje mb d)          = cantidadDeBifurcaciones d
+cantidadDeBifurcaciones (Bifurcacion mb d1 d2) = 1 + cantidadDeBifurcaciones d1 + cantidadDeBifurcaciones d2
+
+--b)
+cantidadDePuntosInteresantes :: Dungeon a -> Int 
+cantidadDePuntosInteresantes (Habitacion x)         = 0
+cantidadDePuntosInteresantes (Pasaje mb d)          = 1 + cantidadDeBifurcaciones d
+cantidadDePuntosInteresantes (Bifurcacion mb d1 d2) = 1 + cantidadDeBifurcaciones d1 + cantidadDeBifurcaciones d2
+
+--c)
+cantidadDePuntosVacios :: Dungeon a -> Int 
+cantidadDePuntosVacios (Habitacion x)         = 0
+cantidadDePuntosVacios (Pasaje mb d)          = (1 - unoSiHay mb) + cantidadDePuntosVacios d
+cantidadDePuntosVacios (Bifurcacion mb d1 d2) = (1 - unoSiHay mb) + cantidadDePuntosVacios d1 + cantidadDePuntosVacios d2
+
+unoSiHay :: Maybe a -> Int 
+unoSiHay (Just _) = 1 
+unoSiHay _        = 0
+
+
+--d)
+cantidadDePuntosCon :: Eq a => a -> Dungeon a -> Int
+cantidadDePuntosCon e (Habitacion x)         = unoSi (e==x)
+cantidadDePuntosCon e (Pasaje mb d)          = unoSi (contieneA mb e) + cantidadDePuntosCon e d
+cantidadDePuntosCon e (Bifurcacion mb d1 d2) = unoSi (contieneA mb e) + cantidadDePuntosCon e d1 + cantidadDePuntosCon e d2
+
+
+contieneA :: Eq a => Maybe a -> a -> Bool 
+contieneA (Just x) e = e == x
+contieneA _        _ = False
+
+unoSi :: Bool -> Int 
+unoSi True  = 1
+unoSi False = 0
+
+
+--e)
+esLineal :: Dungeon a -> Bool 
+esLineal (Habitacion _)        = True
+esLineal (Pasaje _ d)          = esLineal d
+esLineal (Bifurcacion _ d1 d2) = False  
+
+--f)
+llenoDe :: Eq a => a -> Dungeon a -> Bool
+llenoDe e (Habitacion x)         = e == x
+llenoDe e (Pasaje mb d)          = contieneA mb e && llenoDe e d
+llenoDe e (Bifurcacion mb d1 d2) = contieneA mb e && llenoDe e d1 && llenoDe e d2
+
+
+
+
+-- EJERCICIO 4
+data Tesoro = Cofre | Oro | Joyas
+
+
+{-
+a)  ∀x :: a. cantidadDePuntosVacios (Habitacion x) = 0
+ 
+ Dem.
+        cantidadDePuntosVacios (Habitacion x)
+    =                           (def. cantidadDePuntosVacios, 1° ecuación)
+        0
+
+
+
+
+
+
+
+
+b)
+
+    cantidadDePuntosVacios (Pasaje Nothing (Habitacion Joyas)) = 1
+
+Dem.
+
+        cantidadDePuntosVacios (Pasaje Nothing (Habitacion Joyas))
+    =                                       (def. cantidadDePuntosVacios, 2° ecuación)
+        (1 - unoSiHay Nothing) + cantidadDePuntosVacios (Habitacion Joyas)
+    =                                       (LEMA punto a)
+        (1 - unoSiHay Nothing) + 0
+    =                                       (def. unoSiHay, 2° ecuación)
+        (1 - 0) + 0
+    =                                       (aritmética)
+        1
+
+
+
+
+
+
+c)  ∀x :: a, ∀y :: a. cantidadDePuntosVacios (Pasaje (Just y) (Habitacion x)) = 0
+
+Dem. 
+
+        cantidadDePuntosVacios (Pasaje (Just y) (Habitacion x))
+    =                                       (def. cantidadDePuntosVacios, 2° ecuación)
+        (1 - unoSiHay (Just y)) + cantidadDePuntosVacios (Habitacion x)
+    =                                       (LEMA punto a)
+        (1 - unoSiHay (Just y)) + 0
+    =                                       (def. unoSiHay, 1° ecuación)
+        (1 - 1) + 0
+    =                                       (aritmética)
+        0
+
+
+
+
+
+
+
+d)  cantidadDePuntosVacios (Bifurcacion Nothing (Pasaje Nothing    (Habitacion Joyas))
+                                                (Pasaje (Just Oro) (Habitacion Cofre))) = 2
+
+
+Dem.
+
+        cantidadDePuntosVacios (Bifurcacion Nothing (Pasaje Nothing (Habitacion Joyas))
+                                                    (Pasaje (Just Oro) (Habitacion Cofre)))
+
+    =                                       (def. cantidadDePuntosVacios, 3° ecuación)
+
+        (1 - unoSiHay Nothing) + cantidadDePuntosVacios (Pasaje Nothing (Habitacion Joyas))
+                               + cantidadDePuntosVacios (Pasaje (Just Oro) (Habitacion Cofre))
+
+    =                                       (LEMA punto b)
+
+        (1 - unoSiHay Nothing) + 1 + cantidadDePuntosVacios (Pasaje (Just Oro) (Habitacion Cofre))
+    =                                       (LEMA punto c)
+        (1 - unoSiHay Nothing) + 1 + 0
+    =                                       (def. unoSiHay, 2° ecuación)
+        (1 - 0) + 1 + 0
+    =                                       (aritmética)
+        2
+
+
+
+
+
+
+
+
+
+
+e)  ∀z :: a, ∀y :: a, ∀x :: a.
+        cantidadDePuntosVacios (Bifurcacion Nothing (Pasaje Nothing (Habitacion z))
+                                                    (Pasaje (Just y) (Habitacion x)))  = 2
+
+
+Dem. 
+
+        cantidadDePuntosVacios (Bifurcacion Nothing (Pasaje Nothing (Habitacion z))
+                                                    (Pasaje (Just y) (Habitacion x)))
+
+    =                                       (def. cantidadDePuntosVacios, 3° ecuación)            
+
+        (1 - unoSiHay Nothing) + cantidadDePuntosVacios (Pasaje Nothing (Habitacion z))
+                               + cantidadDePuntosVacios (Pasaje (Just y) (Habitacion x))
+
+    =                                       (LEMA del punto c)
+        (1 - unoSiHay Nothing) + cantidadDePuntosVacios (Pasaje Nothing (Habitacion z)) + 0
+    =                                       (LEMA1)
+        (1 - unoSiHay Nothing) + 1 + 0
+    =                                       (def. unoSiHay, 2° ecuación)
+        (1 - 0) + 1 + 0
+    =                                       (aritmética)
+        2
+
+
+
+LEMA1: ∀x :: a. cantidadDePuntosVacios (Pasaje Nothing (Habitacion x)) = 1
+
+Dem. 
+
+        cantidadDePuntosVacios (Pasaje Nothing (Habitacion x))
+    =                                       (def. cantidadDePuntosVacios, 2° ecuación)
+        (1 - unoSiHay Nothing) + cantidadDePuntosVacios (Habitacion x)
+    =                                       (def. cantidadDePuntosVacios, 1° ecuación)
+        (1 - unoSiHay Nothing) + 0
+    =                                       (def. unoSiHay, 2° ecuación)
+        (1 - 0) + 0
+    =                                       (aritmética)
+        1
+
+
+
+
+
+
+
+
+f) cantidadDePuntosVacios (Bifurcacion (Just Cofre) 
+                                       (Bifurcacion Nothing (Pasaje Nothing    (Habitacion Joyas))
+                                                            (Pasaje (Just Oro) (Habitacion Cofre)))
+                                       (Bifurcacion Nothing (Pasaje (Just Oro) (Habitacion Oro))
+                                                            (Pasaje Nothing    (Habitacion Joyas))))
+                                        = 4
+
+
+
+Dem. 
+
+        cantidadDePuntosVacios (Bifurcacion (Just Cofre) 
+                                       (Bifurcacion Nothing (Pasaje Nothing    (Habitacion Joyas))
+                                                            (Pasaje (Just Oro) (Habitacion Cofre)))
+                                       (Bifurcacion Nothing (Pasaje (Just Oro) (Habitacion Oro))
+                                                            (Pasaje Nothing    (Habitacion Joyas))))
+
+    =                                       (def. cantidadDePuntosVacios, 3° ecuación)
+
+        (1 - unoSiHay (Just Cofre)) + cantidadDePuntosVacios (Bifurcacion Nothing (Pasaje Nothing    (Habitacion Joyas))
+                                                                                  (Pasaje (Just Oro) (Habitacion Cofre)))
+                                    + cantidadDePuntosVacios (Bifurcacion Nothing (Pasaje (Just Oro) (Habitacion Oro))
+                                                                                  (Pasaje Nothing    (Habitacion Joyas)))
+    
+    =                                       (LEMA2, ∀x :: Maybe a, ∀d1 :: Dungeon a, ∀d2 :: Dungeon a. cantidadDePuntosVacios (Bifurcacion x d1 d2)
+                                                                                             = cantidadDePuntosVacios (Bifurcacion x d2 d1))
+
+        (1 - unoSiHay (Just Cofre)) + cantidadDePuntosVacios (Bifurcacion Nothing (Pasaje Nothing    (Habitacion Joyas))
+                                                                                  (Pasaje (Just Oro) (Habitacion Cofre)))
+                                    + cantidadDePuntosVacios (Bifurcacion Nothing (Pasaje Nothing    (Habitacion Joyas))        
+                                                                                  (Pasaje (Just Oro) (Habitacion Oro)))
+
+    =                                       (LEMA del punto e) x2
+        (1 - unoSiHay (Just Cofre)) + 2 + 2
+    =                                       (def. unoSiHay, 1° ecuación)
+        (1 - 1) + 2 + 2
+    =                                       (aritmética)
+        4                 
+-}
+
+
+
+
+
+
