@@ -1,6 +1,5 @@
-twice :: (a -> a) -> (a -> a)
-twice f = g 
-        where g x = f (f x)
+twice :: (a -> a) -> a -> a
+twice f x =  f (f x)
 
 swap :: (a,b) -> (b,a)
 swap (x,y) = (y,x)
@@ -31,3 +30,9 @@ appDup f = g
 
 twice' :: (a -> a) -> a -> a 
 twice' = appDup (uncurry (.))
+
+compose :: (b -> c) -> (a -> b) -> a -> c 
+compose f g x = f (g x)
+
+compose12 :: (d->c) -> (a->b->d) -> a -> b -> c 
+compose12 f g x y = f (g x y)
