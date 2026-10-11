@@ -802,10 +802,248 @@ k)
     
     La reducción devuelve una tupla cuyo primer elemento es distinto de xs.
 
-
-
-            
-
-
-
 -}
+
+
+-- ================================================================================= --
+--                                    SECCIÓN 2                                      --
+-- ================================================================================= --
+
+data N = Z | S N 
+
+-- EJERCICIO 1
+--a)
+evalN :: N -> Int 
+evalN Z     = 0
+evalN (S n) = 1 + evalN n
+
+addN :: N -> N -> N 
+addN Z     k = k
+addN (S n) k = S (addN n k) 
+
+prodN :: N -> N -> N 
+prodN Z     k = Z
+prodN (S n) k = addN k (prodN n k)
+
+int2N :: Int -> N 
+int2N 0 = Z
+int2N n = S (int2N (n-1))
+
+--b)
+{-
+    i) 
+        ∀n1.∀n2. evalN (addN n1 n2) = evalN n1 + evalN n2    
+        // IMPORTANTE: lo q dice esta propiedad es que si N denota los enteros
+                       addN DENOTA la SUMA 
+    Sean n y k elementos de N arbitrarios. Por ppio. de ind. sobre la estructura de n.
+
+    ||| CASO BASE n = Z ||| 
+        evalN (addN Z k) = evalN Z + evalN k
+
+    LADO IZQ
+            evalN (addN Z k)
+        =                       (def. addN.1)
+            evalN k
+
+    LADO DER
+            evalN Z + evalN k
+        =                       (def. evalN.1)
+            0 + evalN k
+        =                       (0 neutro de la suma)
+            evalN k
+
+    
+    ||| CASO INDUCTIVO n = (S n') ||| 
+        HI) evalN (addN n' k) = evalN n' + evalN k
+        TI) evalN (addN (S n') k) = evalN (S n') + evalN k 
+
+
+    LADO IZQ
+            evalN (addN (S n') k)
+        =                       (def. addN.2)
+            evalN (S (addN n' k))
+        =                       (def. evalN.2)
+            1 + evalN (addN n' k)
+
+
+    LADO DER
+            evalN (S n') + evalN k
+        =                       (def. evalN.2)
+            1 + evalN n' + evalN k
+        =                       (HI)
+            1 + evalN (addN n' k)    
+
+
+    
+
+    ii)
+        ∀n1.∀n2. evalN (prodN n1 n2) = evalN n1 * evalN n2
+        Sean n y k elementos arbitrarios de N. Por ppio. de ind. sobre la estructura de n.
+
+
+    ||| CASO BASE n = Z |||
+        evalN (prodN Z k) = evalN Z * evalN k
+
+    LADO IZQ 
+            evalN (prodN Z k)
+        =                       (def. prodN.1)
+            evalN Z
+        =                       (def. evalN)
+            0
+
+    LADO DER
+            evalN Z * evalN k
+        =                       (def. evalN Z)
+            0 * evalN k
+        =                       (prop. mult. de 0)
+            0
+
+    
+    ||| CASO INDUCTIVO n = (S n') |||
+        HI) evalN (prodN n' k) = evalN n' * evalN k
+        TI) evalN (prodN (S n') k) = evalN (S n') * evalN k
+
+
+    LADO IZQ 
+            evalN (prodN (S n') k)
+        =                       (def. prodN.2)
+            evalN (addN k (prodN n' k))
+        =                       (Prop. inciso (i))
+            evalN k + evalN (prodN n' k)
+        =                       (HI)
+            evalN k + evalN n' * evalN k
+
+
+
+    LADO DER 
+            evalN (S n') * evalN k
+        =                       (def. evalN)
+            (1 + evalN n') * evalN k
+        =                       (distributiva mult.)
+            evalN k + evalN n' * evalN k
+     
+
+
+
+
+    iii)
+        int2N . evalN = id
+        Por ppio. de extensionalidad es equivalente a demostrar que:
+        ∀n. (int2N . evalN) n =  id n
+        Sea x un elemento arbitrario de N. Por ppio. de ind. sobre la estructura de x.
+
+    ||| CASO BASE x = Z |||
+            (int2N . evalN) Z = id Z
+        
+
+    LADO IZQ 
+            (int2N . evalN) Z
+        =                       (def. (.))
+            int2N (evalN Z)
+        =                       (def. evalN.1)
+            int2N 0
+        =                       (def. int2N)
+            Z
+
+    LADO DER
+            id Z
+        =                       (def. id)
+            Z
+
+
+    iv)
+        evalN . int2N = id
+        Por ppio. de extensionalidad es equivalente a demostrar que:
+        ∀n. (evalN . int2N) n = id n
+        Sea x un entero mayor o igual a 0 cualquiera. Por ppio. de ind matemática.
+
+    ||| CASO BASE x = 0 |||
+            (evalN . int2N) 0 = id 0
+        
+    LADO IZQ 
+            (evalN . int2N) 0
+        =                       (def. (.))
+            evalN (int2N 0)
+        =                       (def. int2N.1)
+            evalN Z
+        =                       (def. evalN.1)
+            0
+
+    LADO DER
+            id 0
+        =                       (def. id)
+            0
+
+
+    ||| CASO INDUCTIVO x = (x'+ 1) |||
+        HI) (eval . int2N) x' = id x' 
+        TI) (eval . int2N) (x' + 1) = id (x + 1)
+    
+
+    LADO IZQ 
+            (eval . int2N) (x' + 1)
+        =                       (def. (.))
+            evalN (int2N (x' + 1))
+        =                       (LEMA 2.1: ∀n1.∀n2. int2N (n1 + n2) = addN (int2N n1) (int2N n2))
+            evalN (addN (int2N x') (int2N 1))
+        =                       (Prop. del inciso (i) )
+            evalN (int2N x') + evalN (int2N 1)
+        =                       (Prop. del inciso (iii) )
+            x' + 1
+        
+
+    LADO DER   
+            id (x' + 1)
+        =                       (def. id)
+            x' + 1
+
+
+    =================================================================================
+    LEMA 2.1: ∀n1.∀n2. int2N (n1 + n2) = addN (int2N n1) (int2N n2)
+    =================================================================================
+    Sean n y k enteros >= 0. Por ppio. de ind. matemática de n.
+    
+    ||| CASO BASE n = 0 |||
+        int2N (0 + k) = addN (int2N 0) (int2N k)
+
+    LADO IZQ
+            int2N (0 + k)
+        =                       (neutro de la suma)
+            int2N k
+    
+
+    LADO DER
+            addN (int2N 0) (int2N k)
+        =                       (def. int2N.1)
+            addN Z (int2N k)
+        =                       (def. addN.1)
+            int2N k
+
+
+    
+    ||| CASO INDUCTIVO n = (n' + 1) |||
+        HI) int2N (n' + k) = addN (int2N n') (int2N k)
+        TI) int2N ((n' + 1) + k) = addN (int2N (n' + 1)) (int2N k)
+
+    LADO IZQ 
+            int2N ((n' + 1) + k)
+        =                       (conmutatividad y asociatividad de la suma)
+            int2N ((n' + k) + 1)
+        =                       (def. int2N.2)
+            S (int2N ((n' + k) + 1 - 1))
+        =                       (aritmética)
+            S (int2N (n' + k))
+
+    
+    LADO DER 
+            addN (int2N (n' + 1)) (int2N k)
+        =                       (def. int2N.2)
+            addN (S (int2N (n' + 1 - 1))) (int2N k)
+        =                       (aritmética)
+            addN (S (int2N n')) (int2N k)
+        =                       (def. addN.2)
+            S (addN (int2N n') (int2N k))
+        =                       (HI)
+            S (int2N (n' + k))
+-}
+
