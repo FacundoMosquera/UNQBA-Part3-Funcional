@@ -1047,3 +1047,273 @@ int2N n = S (int2N (n-1))
             S (int2N (n' + k))
 -}
 
+
+
+
+
+-- EJERCICIO 2
+type NU = [()]
+
+--a)
+evalNU :: NU -> Int 
+evalNU = length
+
+succNU :: NU -> NU 
+succNU = (():)
+
+addNU :: NU -> NU -> NU
+addNU = (++)
+
+nu2n :: NU -> N 
+nu2n []     = Z
+nu2n (u:us) = S (nu2n us)
+
+n2nu :: N -> NU
+n2nu Z     = []
+n2nu (S n) = () : n2nu n
+
+{-
+b)
+
+    i) 
+            evalNU . succNU = (+1) . evalNU
+    Por ppio. de extensionalidad, es equivalente a demostrar que: 
+            ∀x. (evalNU . succNU) x = ((+1) . evalNU) x
+    Sea n un elemento arbitrario de NU. Por ppio. de ind. sobre la estructura de n.
+
+    ||| CASO BASE n = [] |||
+        
+            (evalNU . succNU) [] = ((+1) . evalNU) []
+
+    LADO IZQ 
+            (evalNU . succNU) []
+        =                       (def. (.))
+            evalNU (succNU [])
+        =                       (def. succNU.1)
+            evalNU [()]
+        =                       (def. evalNU)
+            length [()]
+        =                       (def. length.2)
+            1 + length []
+        =                       (def. length.1)
+            1 + 0
+    
+    LADO DER
+            ((+1) . evalNU) []
+        =                       (def. (.))
+            (+1) (evalNU [])
+        =                       (def. evalNU)
+            (+1) (length [])
+        =                       (def. length.1)
+            (+1) 0
+        =                       (def. (+), donde y <- 1)
+            0 + 1
+        =                       (conmutatividad de la suma)
+            1 + 0
+
+    
+    ||| CASO INDUCTIVO n = (u:us) |||
+        HI) (evalNU . succNU) us = ((+1) . evalNU) us
+        TI) (evalNU . succNU) (u:us) = ((+1) . evalNU) (u:us)
+
+    LADO IZQ 
+            (evalNU . succNU) (u:us)
+        =                       (def. (.))
+            evalNU (succNU (u:us))
+        =                       (def. succNU)
+            evalNU (():(u:us))
+        =                       (def. evalNU)
+            length (():(u:us))
+        =                       (def. length.2)
+            1 + length (u:us)
+        
+
+    LADO DER
+            ((+1) . evalNU) (u:us)
+        =                       (def. (.))
+            (+1) (evalNU (u:us))
+        =                       (def. evalNU)
+            (+1) (length (u:us))
+        =                       (def. (+), donde y <- 1)
+            length (u:us) + 1
+        =                       (conmutatividad de la suma)
+            1 + length (u:us)
+
+    
+
+    ii)
+            ∀n1. ∀n2. evalNU (addNU n1 n2) = evalNU n1 + evalNU n2
+        Sean n y k elementos arbitrarios de NU. Por ppio. de inducción estructural sobre n.
+
+    ||| CASO BASE n = [] |||
+        
+            evalNU (addNU [] k) = evalNU [] + evalNU k
+    
+    LADO IZQ 
+            evalNU (addNU [] k)
+        =                       (def. addNU)
+            evalNU ((++) [] k)
+        =                       (def. (++).1)
+            evalNU k
+
+
+    LADO DER
+            evalNU [] + evalNU k
+        =                       (def. evalNU)
+            length [] + evalNU k
+        =                       (def. length.1)
+            0 + evalNU k
+        =                       (neutro de la suma)
+            evalNU k
+
+
+    ||| CASO INDUCTIVO  n = (x:xs) |||
+        HI) evalNU (addNU ns k) = evalNU ns + evalNU k
+        TI) evalNU (addNU (n:ns) k) = evalNU (n:ns) + evalNU k  
+
+    LADO IZQ
+            evalNU (addNU (n:ns) k)
+        =                       (def. addNU)
+            evalNU ((++) (n:ns) k)
+        =                       (def. (++).2)
+            evalNU (n: (++) ns k)
+        =                       (def.evalNU)
+            length (n: (++) ns k)
+        =                       (def. length.2)
+            1 + length ((++) ns k)
+        =                       (def. addNU)
+            1 + length (addNU ns k)
+        =                       (def. evalNU)
+            1 + evalNU (addNU ns k)
+        
+    LADO DER
+            evalNU (n:ns) + evalNU k
+        =                       (def. evalNU)
+            length (n:ns) + evalNU k
+        =                       (def. length.2)
+            1 + length ns + evalNU k
+        =                       (def. evalNU)
+            1 + evalNU ns + evalNU k
+        =                       (HI)
+            1 +  evalNU (addNU ns k)
+    
+
+
+    iii)
+            nu2n . n2nu = id
+        Por ppio. de extensionalidad, es equivalente a demostrar que:
+            ∀n. (nu2n . n2nu) n = id n
+        Sea k un elemento arbitrario de N. Por ppio. de inducción sobre la estructura de k.
+
+    ||| CASO BASE k = Z |||
+        
+        (nu2n . n2nu) Z = id Z
+
+
+
+    LADO IZQ 
+            (nu2n . n2nu) Z
+        =                       (def. (.))
+            nu2n (n2nu Z)
+        =                       (def. n2nu.1)
+            nu2n []
+        =                       (def. nu2n.1)
+            Z
+
+
+    LADO DER    
+            id Z
+        =                       (def. id)
+            Z
+
+
+
+
+    ||| CASO INDUCTIVO k = (S k') |||
+        HI) (nu2n . n2nu) k' = id k'
+        TI) (nu2n . n2nu) (S k') = id (S k')
+
+
+
+    LADO IZQ
+            (nu2n . n2nu) (S k')
+        =                       (def. (.))
+            nu2n (n2nu (S k'))
+        =                       (def. n2nu.2)
+            nu2n ((): n2nu k' )
+        =                       (def. nu2n.2)
+            S (nu2n (n2nu k'))
+        =                       (def. (.))
+            S ((nu2n . n2nu) k')
+        =                       (HI)
+            S (id k')
+        =                       (def. id)
+            S k'
+
+
+
+    LADO DER
+            id (S k')
+        =                       (def. id)
+            S k' 
+
+
+    iv)
+            n2nu . nu2n = id
+        Por ppio. de extensionalidad, es equivalente a demostrar que:
+            ∀n. (n2nu . nu2n) n = id n
+        Sea k un elementro arbitrario de NU. Por ppio. de ind. sobre la estructura de k.
+
+    ||| CASO BASE k = [] |||
+        
+            (n2nu . nu2n) [] = id []
+
+
+    LADO IZQ 
+            (n2nu . nu2n) []
+        =                       (def. (.))
+            n2nu (nu2n [])
+        =                       (def. nu2n.1)
+            n2nu Z
+        =                       (def. n2nu.1)
+            []
+
+    LADO DER
+            id []
+        =                       (def. id)
+            []   
+        
+
+
+
+
+    ||| CASO INDUCTIVO k = (x:xs) |||
+        HI) (n2nu . nu2n) xs = id xs
+        TI) (n2nu . nu2n) (x:xs) = id (x:xs)
+
+    LADO IZQ
+            (n2nu . nu2n) (x:xs)
+        =                       (def. (.))
+            n2nu (nu2n (x:xs))
+        =                       (def. nu2n.2)
+            n2nu (S (nu2n xs))
+        =                       (def. n2nu.2)
+            () : (n2nu (nu2n xs))
+        =                       (def. (.))
+            () : ((n2nu . nu2n) xs)
+        =                       (HI)
+            () : (id xs)
+        =                       (def. id)
+            () : xs
+        
+    LADO DER
+            id (x:xs)
+        =                       (def. id)
+            x:xs
+        =                       (los elementos de NU estan representados por una lista de unit, por lo que x = ())
+            () : xs
+
+
+
+
+-}
