@@ -1317,3 +1317,235 @@ b)
 
 
 -}
+
+-- EJERCICIO 3
+data DigBin = O | I
+type NBin = [DigBin] --el digito menos significativo a la izquierda
+
+dbAsInt :: DigBin -> Int 
+dbAsInt O = 0
+dbAsInt I = 1
+
+--a)
+
+
+
+
+
+
+-- ================================================================================= --
+--                                    SECCIÓN 3                                      --
+-- ================================================================================= --
+
+-- EJERCICIO 1
+data ExpA = Cte Int 
+          | Suma ExpA ExpA
+          | Prod ExpA ExpA
+
+--a)
+evalExpA :: ExpA -> Int 
+evalExpA (Cte n)      = n
+evalExpA (Suma e1 e2) = evalExpA e1 + evalExpA e2
+evalExpA (Prod e1 e2) = evalExpA e1 * evalExpA e2
+
+simplificarExpA :: ExpA -> ExpA 
+simplificarExpA (Cte n)      = Cte n
+simplificarExpA (Suma e1 e2) = sumaSimplificada (simplificarExpA e1) (simplificarExpA e2)
+simplificarExpA (Prod e1 e2) = prodSimplificada (simplificarExpA e1) (simplificarExpA e2)
+
+prodSimplificada :: ExpA -> ExpA -> ExpA
+prodSimplificada (Cte 1) n       = n
+prodSimplificada (Cte 0) n       = Cte 0
+prodSimplificada m       (Cte 1) = m
+prodSimplificada m       (Cte 0) = Cte 0
+prodSimplificada m       n       = Prod m  n
+
+sumaSimplificada :: ExpA -> ExpA -> ExpA
+sumaSimplificada (Cte 0) n       = n 
+sumaSimplificada m       (Cte 0) = m
+sumaSimplificada m       n       = Suma m n
+
+
+cantidadDeSumaCero :: ExpA -> Int 
+cantidadDeSumaCero (Cte _)      = 0
+cantidadDeSumaCero (Suma e1 e2) = fromEnum (esSumaCero e1 e2) + cantidadDeSumaCero e1 + cantidadDeSumaCero e2
+cantidadDeSumaCero (Prod e1 e2) = cantidadDeSumaCero e1 + cantidadDeSumaCero e2
+
+esSumaCero :: ExpA -> ExpA -> Bool
+esSumaCero (Cte 0) _ = True
+esSumaCero _ (Cte 0) = True 
+esSumaCero _  _      = False 
+
+
+{-
+b)
+    i)
+            evalExpA . simplificarExpA = evalExpA
+    Por ppio. de extensionalidad, es equivalente a demostrar que:
+            ∀x. (evalExpA . simplificarExpA) x = evalExpA x
+    Sea e un elemento arbitrario de ExpA. Por ppio. de ind. sobre la estructura de e.
+
+    ||| CASO BASE e = (Cte n), donde n es un entero arbitrario |||
+        
+        (evalExpA . simplificarExpA) (Cte n) = evalExpA (Cte n)
+
+    LADO IZQ 
+            (evalExpA . simplificarExpA) (Cte n)
+        =                       (def. (.))
+            evalExpA (simplificarExpA (Cte n))
+        =                       (def. simplificarExpA.1)
+            evalExpA (Cte n)
+    
+    LADO DER
+            evalExpA (Cte n)
+
+    ||| CASO INDUCTIVO 1, e = (Suma e1 e2) |||
+        HI1) (evalExpA . simplificarExpA) e1 = evalExpA e1
+        HI2) (evalExpA . simplificarExpA) e2 = evalExpA e2
+        TI)  (evalExpA . simplificarExpA) (Suma e1 e2) = evalExpA (Suma e1 e2)
+
+
+    LADO IZQ 
+            (evalExpA . simplificarExpA) (Suma e1 e2)
+        =                       (def. (.))
+            evalExpA (simplificarExpA (Suma e1 e2))
+        =                       (def. simplificarExpA.2)
+            evalExpA (sumaSimplificada (simplificarExpA e1) (simplificarExpA e2))
+
+            || SUBCASO (simplificarExpA e1) = Cte 0 ||
+                evalExpA (sumaSimplificada (Cte 0) (simplificarExpA e2))
+            =                   (def. sumaSimplificada.1)
+                evalExpA (simplificarExpA e2)
+            =                   (def. (.))
+                (evalExpA . simplificarExpA) e2
+            =                   (HI2)
+                evalExpA e2
+            =                   (neutro de la suma)
+                0 + evalExpA e2
+            =                   (def. evalExpA.1)
+                evalExpA (Cte 0) + evalExpA e2
+            =                   (def. evalExpA.2)
+                evalExpA (Suma (Cte 0) e2)
+
+           || SUBCASO (simplificarExpA e2) = Cte 0 ||
+                evalExpA (sumaSimplificada (simplificarExpA e1) (Cte 0))
+            =                   (def. sumaSimplificada.2)
+                evalExpA (simplificarExpA e1)
+            =                   (def. (.))
+                (evalExpA . simplificarExpA) e1
+            =                   (HI1)
+                evalExpA e1
+            =                   (neutro de la suma)
+                evalExpA e1 + 0
+            =                   (def. evalExpA.1)
+                evalExpA e1 + evalExpA (Cte 0)
+            =                   (def. evalExpA.2)
+                evalExpA (Suma e1 (Cte 0))
+        
+           || SUBCASO (simplificarExpA e1) != Cte 0 y (simplificarExpA e2) != Cte 0 ||
+                evalExpA (sumaSimplificada (simplificarExpA e1) (simplificarExpA e2))
+            =                   (def. sumaSimplificada.3)
+                evalExpA (Suma (simplificarExpA e1) (simplificarExpA e2))
+            =                   (def. evalExpA.2)
+                evalExpA (simplificarExpA e1) + evalExpA (simplificarExpA e2)
+            =                   (def. (.))
+                (evalExpA . simplificarExpA) e1 + (evalExpA . simplificarExpA) e2
+            =                   (HI1)
+                evalExpA e1 + (evalExpA . simplificarExpA) e2
+            =                   (HI2)
+                evalExpA e1 + evalExpA e2
+            =                   (def. evalExpA)
+                evalExpA (Suma e1 e2)
+    
+    ||| CASO INDUCTIVO 2 e = (Prod e1 e2) |||
+        HI1) (evalExpA . simplificarExpA) e1 = evalExpA e1
+        HI2) (evalExpA . simplificarExpA) e2 = evalExpA e2
+        TI)  (evalExpA . simplificarExpA) (Prod e1 e2) = evalExpA (Prod e1 e2)
+
+    DEM.:  
+            (evalExpA . simplificarExpA) (Prod e1 e2)
+        =                       (def. (.))
+            evalExpA (simplificarExpA (Prod e1 e2))
+        =                       (def. simplificarExpA.3)
+            evalExpA (prodSimplificada (simplificarExpA e1) (simplificarExpA e2))
+
+
+            || SUBCASO (simplificarExpA e1) = (Cte 1) ||
+                evalExpA (prodSimplificada (Cte 1) (simplificarExpA e2))
+            =                   (def. prodSimplificada.1)
+                evalExpA (simplificarExpA e2)
+            =                   (def. (.))
+                (evalExpA . simplificarExpA) e2
+            =                   (HI2)
+                evalExpA e2
+            =                   (neutro mult.)
+                1 * evalExpA e2
+            =                   (def. evalExpA.1)
+                evalExpA (Cte 1) * evalExpA e2
+            =                   (def. evalExpA.3) 
+                evalExpA (Prod (Cte 1) e2) 
+
+
+            || SUBCASO (simplificarExpA e1) = (Cte 0) || 
+                evalExpA (prodSimplificada (Cte 0) (simplificarExpA e2))
+            =                   (def. prodSimplificada.2)
+                evalExpA (Cte 0)
+            =                   (def. evalExpA.1)
+                0
+            =                   (prop. mult. del 0)
+                0 * evalExpA e2
+            =                   (def. evalExpA.1)
+                evalExpA (Cte 0) * evalExpA e2
+            =                   (def. evalExpA.3)
+                evalExpA (Prod (Cte 0) e2)
+            
+
+            || SUBCASO (simplificarExpA e2) = (Cte 1) ||
+                evalExpA (prodSimplificada (simplificarExpA e1) (Cte 1))
+            =                   (def. prodSimplificada.3)
+                evalExpA (simplificarExpA e1)
+            =                   (def. (.))
+                (evalExpA . simplificarExpA) e1
+            =                   (HI1)
+                evalExpA e1
+            =                   (neutro mult.)
+                evalExpA e1 * 1
+            =                   (def. evalExpA.1)
+                evalExpA e1 * evalExpA (Cte 1)
+            =                   (def. evalExpA.3) 
+                evalExpA (Prod e1 (Cte 1)) 
+
+
+            || SUBCASO (simplificarExpA e2) = (Cte 0) || 
+                evalExpA (prodSimplificada (simplificarExpA e1) (Cte 0))
+            =                   (def. prodSimplificada.4)
+                evalExpA (Cte 0)
+            =                   (def. evalExpA.1)
+                0
+            =                   (prop. mult. del 0)
+                evalExpA e1 * 0
+            =                   (def. evalExpA.1)
+                evalExpA e1 * evalExpA (Cte 0)
+            =                   (def. evalExpA.3)
+                evalExpA (Prod e1 (Cte 0))
+
+
+
+            || SUBCASO (simplificarExpA e1) y (simplificarExpA e2) no pertenecen a {(Cte 0), (Cte 1)} ||
+                evalExpA (prodSimplificada (simplificarExpA e1) (simplificarExpA e2) )
+            =                   (def. prodSimplificada.5)
+                evalExpA (Prod (simplificarExpA e1) (simplificarExpA e2))
+            =                   (def. evalExpA.3)
+                evalExpA (simplificarExpA e1) * evalExpA (simplificarExpA e2)
+            =                   (def. (.))
+                (evalExpA . simplificarExpA) e1 * (evalExpA . simplificarExpA) e2
+            =                   (HI1)
+                evalExpA e1 * (evalExpA . simplificarExpA) e2
+            =                   (HI2)
+                evalExpA e1 * evalExpA e2
+            =                   (def. evalExpA.3)
+                evalExpA (Prod e1 e2) 
+
+
+
+-}
