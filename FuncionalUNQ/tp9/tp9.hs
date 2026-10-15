@@ -492,3 +492,279 @@ ea2Arbol (BOp bo e1 e2) = Nodo bo (ea2Arbol e1) (ea2Arbol e2)
 
 
 -}
+
+
+
+
+
+
+-- ================================================================================= --
+--                                  EJERCICIO 2                                      --
+-- ================================================================================= --
+
+data Tree a = EmptyT | NodeT a (Tree a) (Tree a)
+
+--a)
+sumarT :: Tree Int -> Int 
+sumarT EmptyT          = 0
+sumarT (NodeT x t1 t2) = x + sumarT t1 + sumarT t2
+
+
+sizeT :: Tree a -> Int 
+sizeT EmptyT          = 0
+sizeT (NodeT x t1 t2) = 1 + sizeT t1 + sizeT t2
+
+
+anyT :: (a -> Bool) -> Tree a -> Bool 
+anyT f EmptyT          = False
+anyT f (NodeT x t1 t2) = f x || anyT f t1 || anyT f t2
+
+
+countT :: (a -> Bool) -> Tree a -> Int
+countT f EmptyT          = 0
+countT f (NodeT x t1 t2) = fromEnum (f x) + countT f t1 + countT f t2
+
+
+countLeaves :: Tree a -> Int 
+countLeaves EmptyT          = 1
+countLeaves (NodeT x t1 t2) = countLeaves t1 + countLeaves t2
+
+
+heightT :: Tree a -> Int 
+heightT EmptyT          = 0
+heightT (NodeT x t1 t2) = 1 + (heightT t1 `max` heightT t2)
+
+
+inOrder :: Tree a -> [a]
+inOrder EmptyT          = []
+inOrder (NodeT x t1 t2) = inOrder t1 ++ [x] ++ inOrder t2
+
+
+listPerLevel :: Tree a -> [[a]]
+listPerLevel EmptyT          = []
+listPerLevel (NodeT x t1 t2) = [x] : zipLevels (listPerLevel t1) (listPerLevel t2)
+                            where zipLevels xss      []       = xss
+                                  zipLevels []       yss      = yss
+                                  zipLevels (xs:xss) (ys:yss) = (xs ++ ys) : zipLevels xss yss
+
+
+
+mirrorT :: Tree a -> Tree a
+mirrorT EmptyT          = EmptyT
+mirrorT (NodeT x t1 t2) = NodeT x (mirrorT t2) (mirrorT t1)
+
+
+levelN :: Int -> Tree a -> [a]
+levelN n EmptyT          = []
+levelN n (NodeT x t1 t2) = if n==0 then [x] else (levelN (n-1) t1) ++ (levelN (n-1) t2)
+
+
+ramaMasLarga :: Tree a -> [a]
+ramaMasLarga EmptyT          = []
+ramaMasLarga (NodeT x t1 t2) = let l1 = ramaMasLarga t1
+                                   l2 = ramaMasLarga t2
+                                   in if length l1 > length l2 then [x] ++ l1 else [x] ++ l2
+
+
+todosLosCaminos :: Tree a -> [[a]]
+todosLosCaminos EmptyT          = []
+todosLosCaminos (NodeT x t1 t2) = let c1     = todosLosCaminos t1 
+                                      c2     = todosLosCaminos t2
+                                      finAca = if null c1 || null c2 then [[x]] else []
+                                    in finAca ++ (concatATodas x c1) ++ (concatATodas x c2) 
+
+concatATodas :: a -> [[a]] -> [[a]]
+concatATodas e []       = []
+concatATodas e (xs:xss) = (e:xs) : concatATodas e xss
+
+{-
+(NodeT 3 (NodeT 120 EmptyT EmptyT) 
+         (NodeT 10 (NodeT 20 (NodeT 399 EmptyT EmptyT) 
+                             (NodeT 50  EmptyT EmptyT))
+                    EmptyT))
+-}
+
+
+{-
+
+b)
+    i)
+            heightT = length . ramaMasLarga
+        Por ppio. de extensionalidad, es equivalente a demostrar que:
+            ∀t. heightT t = (length . ramasMasLarga) t
+        
+        Dem.:
+        Sea t' un elemento de Tree a. Por ppio. de ind. sobre la estructura de t'.
+
+        caso base, t' = EmptyT
+                heightT EmptyT = (length . ramaMasLarga) EmptyT
+
+        caso inductivo, t' = (NodeT x t1 t2)
+                HI1) heightT t1 = (length . ramasMasLarga) t1
+                HI2) heightT t2 = (length . ramasMasLarga) t2
+                TI)  heightT (NodeT x t1 t2) = (length . ramasMasLarga) (NodeT x t1 t2)
+
+
+        
+        ||caso base, t'= EmptyT||
+        
+        LADO IZQ
+                heightT EmptyT
+            =                       (def. heighT.1)
+                0
+        
+        LADO DER
+                (length . ramaMasLarga) EmptyT
+            =                       (def. (.))
+                length (ramaMasLarga EmptyT)
+            =                       (def. ramaMasLarga.1)
+                length []
+            =                       (def. length)
+                0
+
+        
+        ||caso inductivo, t' = (NodeT x t1 t2)||
+        
+        LADO IZQ
+                heightT (NodeT x t1 t2)
+            =                       (def. heightT.2)
+                1 + (heighT t1 `max` heighT t2)
+                       
+
+
+        LADO DER
+                (length . ramaMasLarga) (NodeT x t1 t2)
+            =                       (def. (.))
+                length (ramaMasLarga (NodeT x t1 t2))
+            =                       (def. ramaMasLarga.2)
+                length (length l1 > length l2 then [x] ++ l1 else [x] ++ l2)  (donde l1 = ramaMasLarga t1 y l2 = ramaMasLarga t2)
+            =                       (reemplazo variables)
+                length (length (ramaMasLarga t1) > length (ramaMasLarga t2) 
+                    then [x] ++ ramaMasLarga t1 else [x] ++ ramaMasLarga t2)
+            =                       (def. (.))
+                length ((length . ramaMasLarga) t1) > (length . ramaMasLaraga) t2
+                    then [x] ++ ramaMasLarga t1 else [x] ++ ramaMasLarga t2)
+            =                       (HI1, HI2)
+                length (height t1 > height t2) then [x] ++ ramaMasLarga t1 else [x] ++ ramaMasLarga t2
+
+            ||caso heightT t1 > heightT t2||
+            
+            LADO IZQ
+                =                       (def. max)
+                    1 + heighT t1
+
+            LADO DER
+                =                       (rama then del if)
+                    length ([x] ++ ramaMasLarga t1) 
+                =                       (def. ++.2)
+                    length (x : [] ++ ramaMasLarga t1)
+                =                       (def. ++.1)
+                    length (x : ramaMasLarga t1)
+                =                       (def. length.2)
+                    1 + length (ramaMasLarga t1)
+                =                       (def. (.))
+                    1 + (length . ramaMasLarga) t1
+                =                       (HI1)
+                    1 + heightT t1
+
+            ||caso heigthT t1 <= heightT2||
+            
+            LADO IZQ
+                =                       (def. max)
+                    1 + heightT t2
+            
+            LADO DER
+                =                       (rama else del if)
+                    length ([x] ++ ramaMasLarga t2) 
+                =                       (def. ++.2)
+                    length (x : [] ++ ramaMasLarga t2)
+                =                       (def. ++.1)
+                    length (x : ramaMasLarga t2)
+                =                       (def. length.2)
+                    1 + length (ramaMasLarga t2)
+                =                       (def. (.))
+                    1 + (length . ramaMasLarga) t2
+                =                       (HI2)
+                    1 + heightT t2
+
+    
+
+    ii)
+            reverse . inOrder = inOrder . mirrorT
+        Por ppio. de extensionalidad, es equivalente a demostrar que:
+            ∀t. (reverse . inOrder) t = (inOrder . mirrorT) t
+
+        Dem.:
+        Sea t' un elemento de Tree a. Por ppio. de ind. sobre la estructura de t'.
+
+        caso base, t' = EmptyT
+                (reverse . inOrder) EmptyT = (inOrder . mirrorT) EmptyT
+        
+        caso inductivo, t' = (NodeT x t1 t2)
+                HI1) (reverse . inOrder) t1 = (inOrder . mirrorT) t1
+                HI2) (reverse . inOrder) t2 = (inOrder . mirrorT) t2
+                TI)  (reverse . inOrder) (NodeT x t1 t2) = (inOrder . mirrorT) (NodeT x t1 t2)
+        
+
+
+        ||caso base, t' = EmptyT||
+
+        LADO IZQ
+                (reverse . inOrder) EmptyT
+            =                       (def. (.))
+                reverse (inOrder EmptyT)
+            =                       (def. inOrder.1)
+                reverse []
+            =                       (def. reverse.1)
+                []
+        
+        LADO DER
+                (inOrder . mirrorT) EmptyT
+            =                       (def. (.))
+                inOrder (mirrorT EmptyT)
+            =                       (def. mirrorT.1)
+                inOrder EmptyT
+            =                       (def. inOrder.1)
+                []
+        
+
+
+        ||caso inductivo, t' = (NodeT x t1 t2)||
+
+        LADO IZQ
+                (reverse . inOrder) (NodeT x t1 t2)
+            =                       (def. (.))
+                reverse (inOrder (NodeT x t1 t2))
+            =                       (def. inOrder.2)
+                reverse (inOrder t1 ++ [x] ++ inOrder t2)
+            =                       (asociatividad ++)
+                reverse (inOrder t1 ++ ([x] ++ inOrder t2))
+            =                       (Prop. tp8: reverse (xs ++ ys) = reverse ys ++ reverse xs)
+                reverse ([x] ++ inOrder t2) ++ reverse (inOrder t1)
+            =                       (Prop. tp8: reverse (xs ++ ys) = reverse ys ++ reverse xs)
+                reverse (inOrder t2) ++ reverse [x] ++ reverse (inOrder t1)
+            =                       (def. reverse.2)
+                reverse (inOrder t2) ++ reverse [] ++ [x] ++ reverse (inOrder t1)
+            =                       (def. reverse.1)
+                reverse (inOrder t2) ++ [] ++ [x] ++ reverse (inOrder t1)
+            =                       (def. ++.1)
+                reverse (inOrder t2) ++ [x] ++ reverse (inOrder t1)
+
+        
+        LADO DER
+                (inOrder . mirrorT) (NodeT x t1 t2)
+            =                       (def. (.))
+                inOrder (mirrorT (NodeT x t1 t2))
+            =                       (def. mirrorT.2)
+                inOrder (NodeT x (mirrorT t2) (mirrorT t1))
+            =                       (def. inOrder.2)
+                inOrder (mirrorT t2) ++ [x] ++ inOrder (mirrorT t1)
+            =                       (def. (.))
+                (inOrder . mirrorT) t2 ++ [x] ++ (inOrder. mirrorT) t1
+            =                       (HI1, HI2)
+                (reverse . inOrder) t2 ++ [x] ++ (reverse . inOrder) t1
+            =                       (def. (.))
+                reverse (inOrder t2) ++ [x] ++ reverse (inOrder t1)
+            
+
+-}
