@@ -404,3 +404,91 @@ b)
             =                       (def. evalExpA.3)
                 evalExpA e1 * evalExpA e2
 -}
+
+
+
+
+
+
+-- ================================================================================= --
+--                                  EJERCICIO 2                                      --
+-- ================================================================================= --
+
+data Arbol a b = Hoja b | Nodo a (Arbol a b) (Arbol a b)
+
+--a)
+cantidadDeHojas :: Arbol a b -> Int 
+cantidadDeHojas (Hoja _)       = 1
+cantidadDeHojas (Nodo _ t1 t2) = cantidadDeHojas t1 + cantidadDeHojas t2
+
+cantidadDeNodos :: Arbol a b -> Int 
+cantidadDeNodos (Hoja _)       = 0
+cantidadDeNodos (Nodo _ t1 t2) = 1 + cantidadDeNodos t1 + cantidadDeNodos t2
+
+cantidadDeConstructores :: Arbol a b -> Int 
+cantidadDeConstructores (Hoja _) = 1
+cantidadDeConstructores (Nodo _ t1 t2) = 1 + cantidadDeConstructores t1 + cantidadDeConstructores t2
+
+ea2Arbol :: EA -> Arbol BinOp Int 
+ea2Arbol (Const n)      = Hoja n
+ea2Arbol (BOp bo e1 e2) = Nodo bo (ea2Arbol e1) (ea2Arbol e2)
+
+
+
+{-b)
+        ∀t:: Arbol a b. cantidadDeHojas t + cantidadDeNodos t = cantidadDeConstructores t
+    
+    Dem.:
+    Sea t' un elemento de Arbol a b. Por ppio. de ind. sobre la estructura de t'.
+
+    caso base, t' = Hoja x
+            cantidadDeHojas (Hoja x) + cantidadDeNodos (Hoja x) = cantidadDeConstructores (Hoja x)
+    
+    caso inductivo, t' = (Nodo y t1 t2)
+            HI1) cantidadDeHojas t1 + cantidadDeNodos t1 = cantidadDeConstructores t1
+            HI2) cantidadDeHojas t2 + cantidadDeNodos t2 = cantidadDeConstructores t2
+            TI)  cantidadDeHojas (Nodo y t1 t2) + cantidadDeNodos (Nodo y t1 t2)
+                        = cantidadDeConstructores (Nodo y t1 t2)
+        
+    
+    ||caso base, t' = Hoja x||
+
+    LADO IZQ
+            cantidadDeHojas (Hoja x) + cantidadDeNodos (Hoja x)
+        =                           (def. cantidadDeHojas.1)
+            1 + cantidadDeNodos (Hoja x)
+        =                           (def. cantidadDeNodos.1)
+            1 + 0
+        =                           (aritmética)
+            1
+    
+
+    LADO DER 
+            cantidadDeConstructores (Hoja x)
+        =                           (def. cantidadDeConstructores.1)
+            1
+    
+
+    ||caso inductivo, t' = (Nodo y t1 t2)||
+
+    LADO IZQ
+            cantidadDeHojas (Nodo y t1 t2) + cantidadDeNodos (Nodo y t1 t2)
+        =                           (def. cantidadDeHojas.2)
+            cantidadDeHojas t1 + cantidadDeHojas t2 + cantidadDeNodos (Nodo y t1 t2)
+        =                           (def. cantidadDeNodos.2)
+            cantidadDeHojas t1 + cantidadDeHojas t2 + 1 + cantidadDeNodos t1 + cantidadDeNodos t2
+        =                           (conmutatividad de la suma)
+            1 + cantidadDeHojas t1 + cantidadDeNodos t1 + cantidadDeHojas t2 + cantidadDeNodos t2
+        =                           (HI1)
+            1 + cantidadDeConstructores t1 + cantidadDeHojas t2 + cantidadDeNodos t2
+        =                           (HI2)
+            1 + cantidadDeConstructores t1 + cantidadDeConstructores t2
+
+
+    LADO DER
+            cantidadDeConstructores (Nodo y t1 t2)
+        =                           (def. cantidadDeConstructores.2)
+            1 + cantidadDeConstructores t1 + cantidadDeConstructores t2
+
+
+-}
