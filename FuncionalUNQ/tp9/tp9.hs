@@ -768,3 +768,290 @@ b)
             
 
 -}
+
+
+
+
+-- ================================================================================= --
+--                                  EJERCICIO 4                                      --
+-- ================================================================================= --
+
+data AppList a = Single a
+               | Append (AppList a) (AppList a) 
+
+
+--a)
+lenAL :: AppList a -> Int 
+lenAL (Single x)   = 1
+lenAL (Append l r) = lenAL l + lenAL r  
+
+
+consAL :: a -> AppList a -> AppList a
+consAL e (Single x)   = Append (Single e) (Single x)
+consAL e (Append l r) = Append (consAL e l) r
+
+
+headAL :: AppList a -> a --Esta sí debería ser recursiva estructural.
+headAL (Single x)   = x
+headAL (Append l r) = headAL l
+
+
+tailAL :: AppList a -> AppList a
+tailAL (Single x)   = error "No puede resultar en una lista vacía."
+tailAL (Append l r) = case l of 
+                        (Single _) -> r
+                        _          -> Append (tailAL l) r
+
+
+snocAL :: AppList a -> a -> AppList a 
+snocAL (Single x)   y = Append (Single x) (Single y)
+snocAL (Append l r) y = Append l (snocAL r y)
+
+
+lastAL :: AppList a -> a --también debería ser recursiva estructural.
+lastAL (Single x)   = x
+lastAL (Append l r) = lastAL r
+
+
+initAL :: AppList a -> AppList a
+initAL (Single x)   = error "No puede resultar en una lista vacía."
+initAL (Append l r) = case r of
+                        (Single _) -> l
+                        _          -> Append l (initAL r)
+
+
+reverseAL :: AppList a -> AppList a
+reverseAL (Single x)   = Single x
+reverseAL (Append l r) = Append (reverseAL r) (reverseAL l)
+
+
+elemAL :: Eq a => a -> AppList a -> Bool 
+elemAL x (Single y)   = x == y
+elemAL x (Append l r) = elemAL x l || elemAL x r
+
+
+appendAL :: AppList a -> AppList a -> AppList a
+appendAL app (Single x)   = Append app (Single x)
+appendAL app (Append l r) = Append (appendAL app l) r 
+
+
+appListToList :: AppList a -> [a]
+appListToList (Single x)   = [x]
+appListToList (Append l r) = appListToList l ++ appListToList r
+
+
+{-  Ej. para testear
+
+representando [10,20,30,40,50]
+r1:
+(Append (Append (Single 10) 
+               (Append (Single 20) 
+                       (Append (Single 30) (Single 40)))) 
+        (Single 50))
+
+r2:
+(Append (Append (Append (Single 10) (Single 20)) 
+               (Single 30)) 
+       (Append (Single 40) 
+               (Single 50)))
+
+
+representando [1, 2]
+
+Append (Single 1) (Single 2)
+-}
+
+
+{-
+b)
+    i)
+            ∀xs.∀ys. lenAL (appendAL xs ys) = lenAL xs + lenAL ys
+        
+        Dem.:
+        Sean ws y zs elementos de AppList a. Por ppio. de ind. sobre la estructura de zs.
+
+        caso base, zs = (Single x)
+                lenAL (appendAL ws (Single x)) = lenAL ws + lenAL (Single x)
+
+        caso inductivo, zs = (Append l r)
+                HI1) lenAL (appendAL ws l) = lenAL ws + lenAL l
+                HI2) lenAL (appendAL ws r) = lenAL ws + lenAL r
+                TI)  lenAL (appendAL ws (Append l r)) = lenAL ws + lenAL (Append l r)
+
+        
+
+        ||caso base, zs = (Single x)||
+        
+                lenAL (appendAL ws (Single x))
+            =                       (def. appendAL.1)
+                lenAL (Append ws (Single x))
+            =                       (def. lenAL.2)
+                lenAL ws + lenAL (Single x)
+
+
+        ||caso inductivo, zs = (Append l r)||
+
+        LADO IZQ
+                lenAL (appendAL ws (Append l r))
+            =                       (def. appendAL.2)
+                lenAL (Append (appendAL ws l) r)
+            =                       (def. lenAL.2)
+                lenAL (appendAL ws l) + lenAL r
+            =                       (HI1)
+                lenAL ws + lenAL l + lenAL r
+
+        LADO DER
+                lenAL ws + lenAL (Append l r)
+            =                       (def. lenAL.2)
+                lenAL ws + lenAL l + lenAL r
+
+
+    
+    ii)
+            reverseAL . reverseAL = id
+        Por ppio. de extensionalidad, es equivalente a demostrar que:
+            ∀t. (reverseAl . reverseAL) t = id t
+        
+        Dem.:
+        Sea t' un elemento de AppList a. Por ppio. de ind. sobre la estructura de t'.
+
+        caso base, t' = (Single x)
+                (reverseAl . reverseAL) (Single x) = id (Single x)
+        
+        caso inductivo, t' = (Append l r)
+                HI1) (reverseAL . reverseAL) l = id l
+                HI2) (reverseAL . reverseAL) r = id r
+                TI)  (reverseAL . reverseAL) (Append l r) = id (Append l r)
+
+
+        ||caso base, t' = (Single x)||
+
+        LADO IZQ
+                (reverseAL . reverseAL) (Single x)
+            =                       (def. (.))
+                reverseAL (reverseAL (Single x))
+            =                       (def. reverseAL.1)
+                reveseAL (Single x)
+            =                       (def. reverseAL.1)
+                Single x
+
+        LADO DER
+                id (Single x)
+            =                       (def. id)
+                Single x
+        
+
+        ||caso inductivo, t' = (Append l r)||
+
+        LADO IZQ
+                (reverseAL . reverseAL) (Append l r)
+            =                       (def. (.))
+                reverseAL (reverseAL (Append l r))
+            =                       (def. reverseAL.2)
+                reverseAL (Append (reverseAL r) (reverseAL l))
+            =                       (def. reverseAL.2)
+                (Append (reverseAL (reverseAL l) (reverseAL (reverseAL r)))
+            =                       (def. (.))
+                Append ((reveseAL . reverseAL) l) ((reveseAL . reverseAL) r)
+            =                       (HI1, HI2)
+                Append (id l) (id r)
+            =                       (def. id)
+                Append l r
+        
+        LADO DER
+                id (Append l r)
+            =                       (def. id)
+                Append l r
+
+    
+
+    iii)
+            (reverseAL .) . flip consAL . reverseAL = snocAL
+        Por ppio. de extensionalidad, es equivalente a demostrar que:
+            ∀t.∀e. ((reverseAL .) . flip consAL . reverseAL) t e = snocAL t e
+        
+        Dem.:
+        Sea t' un elemento de AppList a. Sea e' un elemento de a. 
+        Por ppio. de ind. sobre la estructura de t'.
+
+        caso base, t' = (Single x)
+                ((reverseAL .) . flip consAL . reverseAL) (Single x) e' = snocAL (Single x) e'
+        
+
+        caso inductivo, t' = (Append l r)
+                HI1) ((reverseAL .) . flip consAL . reverseAL) l e' = snocAL l e'
+                HI2) ((reverseAL .) . flip consAL . reverseAL) r e' = snocAL r e'
+                TI)  ((reverseAL .) . flip consAL . reverseAL) (Append l r) e' = snocAL (Append l r) e'
+
+
+        ||caso base, t' = (Single x)||
+
+        LADO IZQ
+                ((reverseAL .) . flip consAL . reverseAL) (Single x) e'
+            =                       (def. (.), f <- (reverseAL .) . flip consAL, g <- reveseAL, x <- Single x)
+                ((reverseAL .) . flip consAL) (reverseAL (Single x)) e'
+            =                       (def. (.), f'<- (reverseAL .), g' <- flip consAL, x' <- (reverseAL (Single x)))
+                (reverseAL .) (flip consAL (reverseAL (Single x))) e'
+            =                       (def. (.), f''<- reverseAL, g''<- flip consAL (reverseAL (Single x)), x'' <- e')
+                reverseAL (flip consAL (reverseAL (Single x)) e')
+            =                       (def.  reverseAL.1)
+                reverseAL (flip consAL (Single x) e')
+            =                       (def. flip)
+                reverseAL (consAL e' (Single x))
+            =                       (def. consAL)
+                reverseAL (Append (Single e') (Single x))
+            =                       (def. reverseAL.2)
+                Append (reverseAL (Single x)) (reverseAL (Single e'))
+            =                       (def. reverseAL.1)
+                Append (Single x) (Single e')
+
+
+        LADO DER
+                snocAL (Single x) e'
+            =                       (def. snocAL.1)
+                Append (Single x) (Single e')
+
+        
+
+
+        ||caso inductivo, t' = (Append l r)||
+
+        LADO IZQ
+                ((reverseAL .) . flip consAL . reverseAL) (Append l r) e'
+            =                       (def. (.), f<-(reverseAL .) . flip consAL, g<- reverseAL, x <- (Append l r))
+                ((reverseAL .) . flip consAL) (reverseAL (Append l r)) e'
+            =                       (def. (.), f'<-(reverseAL .), g'<-flip consAL, x'<-reverseAL (Append l r))
+                reverseAL . (flip consAL (reverseAL (Append l r))) e'
+            =                       (def. (.), f''<-reverseAL, g''<-flip consAL (reverseAL (Append l r)), x''<- e')
+                reverseAL (flip consAL (reverseAL (Append l r)) e')
+            =                       (def. flip)
+                reverseAL (consAL e' (reverseAL (Append l r)))
+            =                       (def. reverseAL.2)
+                reverseAL (consAL e' (Append (reverseAL r) (reverseAL l)))
+            =                       (def. consAL.2)
+                reverseAL (Append (consAL e' (reverseAL r)) (reverseAL l))
+            =                       (def. reverseAL.2)
+                Append (reverseAL (reverseAL l)) (reverseAL (consAL e' (reverseAL r)))
+            =                       (def. (.))
+                Append ((reverseAL . reverseAL) l) (reverseAL (consAL e' (reverseAL r)))
+            =                       (prop. inciso (ii) reverseAL . reverseAL = id )
+                Append (id l) (reverseAL (consAL e' (reverseAL r)))
+            =                       (def. id)
+                Append l (reverseAL (consAL e' (reverseAL r)))
+
+
+        LADO DER
+                snocAL (Append l r) e'
+            =                       (def. snocAL.2)
+                Append l (snocAL r e')
+            =                       (HI2)
+                Append l (((reverseAL .) . flip consAL . reverseAL) r e')
+            =                       (def. (.), f<-(reverseAL .) . flip consAL, g<-reverseAL, x<-r)
+                Append l (((reverseAL .) . flip consAL) (reverseAL r) e')
+            =                       (def. (.), f'<-(reverseAL .), g'<-flip consAL, x'<-(reverseAL r))
+                Append l ((reverseAL .) (flip consAL (reverseAL r)) e')
+            =                       (def. (.), f''<-reverseAL, g''<-flip consAL (reverseAL r), x''<-e')
+                Append l (reverseAL (flip consAL (reverseAL r)) e')
+            =                       (def. flip)
+                Append l (reverseAL (consAL e' (reverseAL r)))
+-}
