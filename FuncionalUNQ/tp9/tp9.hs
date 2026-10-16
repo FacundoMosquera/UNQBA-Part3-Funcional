@@ -1055,3 +1055,60 @@ b)
             =                       (def. flip)
                 Append l (reverseAL (consAL e' (reverseAL r)))
 -}
+
+
+
+
+
+
+-- ================================================================================= --
+--                                  EJERCICIO 5                                      --
+-- ================================================================================= --
+data QuadTree a = LeafQ a
+                | NodeQ (QuadTree a) (QuadTree a) (QuadTree a) (QuadTree a)
+                deriving Show
+
+data Color = RGB Int Int Int 
+type Image = QuadTree Color
+
+{-
+(NodeQ (LeafQ 1) 
+       (NodeQ (LeafQ 10) (LeafQ 20) (LeafQ 30) (LeafQ 40)) 
+       (LeafQ 2) 
+       (LeafQ 3))
+-}
+--a)
+heightQT :: QuadTree a -> Int 
+heightQT (LeafQ x)           = 0
+heightQT (NodeQ t1 t2 t3 t4) = 1 + (heightQT t1 `max` heightQT t2 `max` heightQT t3 `max` heightQT t4)
+
+
+countLeavesQT :: QuadTree a -> Int 
+countLeavesQT (LeafQ _)           = 1
+countLeavesQT (NodeQ t1 t2 t3 t4) = countLeavesQT t1 + countLeavesQT t2 + countLeavesQT t3 + countLeavesQT t4
+
+
+sizeQT :: QuadTree a -> Int 
+sizeQT (LeafQ _)           = 1
+sizeQT (NodeQ t1 t2 t3 t4) = 1 + sizeQT t1 + sizeQT t2 + sizeQT t3 + sizeQT t4
+
+
+compress :: Eq a => QuadTree a -> QuadTree a 
+compress (LeafQ x)           = LeafQ x
+compress (NodeQ t1 t2 t3 t4) = comp (compress t1)  (compress t2) (compress t3) (compress t4)
+
+
+comp :: Eq a => QuadTree a -> QuadTree a -> QuadTree a -> QuadTree a -> QuadTree a 
+comp (LeafQ x) (LeafQ y) (LeafQ w) (LeafQ z) = if x==y && x==w && x==z 
+                                                then LeafQ x 
+                                                else NodeQ (LeafQ x) (LeafQ y) (LeafQ w) (LeafQ z)
+comp t1 t2 t3 t4  = NodeQ t1 t2 t3 t4
+
+
+uncompress :: QuadTree a -> QuadTree a 
+uncompress t = f (heightQT t) t
+            where f 0 t = t 
+                  f n t = case t of 
+                            (NodeQ t1 t2 t3 t4) -> NodeQ (f (n-1) t1) (f (n-1) t2) (f (n-1) t3) (f (n-1) t4)   
+                            (LeafQ x)           -> NodeQ (f (n-1) (LeafQ x)) (f (n-1) (LeafQ x)) (f (n-1) (LeafQ x)) (f (n-1) (LeafQ x))
+
