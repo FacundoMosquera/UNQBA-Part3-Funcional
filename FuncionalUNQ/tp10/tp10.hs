@@ -128,3 +128,324 @@ simplificarNExpBin bop e1        e2      = NBOp bop e1 e2
             |        evalNExp (NBOp bop e1 e2) m'
 -}
 
+
+
+
+-- ================================================================================= --
+--                                  EJERCICIO 2                                      --
+-- ================================================================================= --
+data BExp = BCte Bool 
+          | Not BExp 
+          | And BExp BExp 
+          | Or  BExp BExp
+          | ROp RelOp NExp NExp 
+
+data RelOp = Eq | NEq -- Equal y NotEqual
+           | Gt | GEq -- Greater y GreaterOrEqual
+           | Lt | LEq -- Lower y LowerOrEqual
+
+
+evalBExp :: BExp -> Memoria -> Bool 
+evalBExp (BCte b)        mem = b
+evalBExp (Not be)        mem = not (evalBExp be mem)
+evalBExp (And e1 e2)     mem = evalBExp e1 mem && evalBExp e2 mem
+evalBExp (Or e1 e2)      mem = evalBExp e1 mem || evalBExp e2 mem
+evalBExp (ROp rop n1 n2) mem = evalROP rop (evalNExp n1 mem) (evalNExp n2 mem)
+
+evalROP :: RelOp -> (Int -> Int -> Bool)
+evalROP Eq  = (==)
+evalROP NEq = (/=)
+evalROP Gt  = (>) 
+evalROP GEq = (>=)
+evalROP Lt  = (<)
+evalROP LEq = (<=)
+
+
+cfBExp :: BExp -> BExp 
+cfBExp (BCte b)        = BCte b
+cfBExp (Not be)        = cfNot (cfBExp be)
+cfBExp (And e1 e2)     = cfAnd (cfBExp e1) (cfBExp e2)
+cfBExp (Or e1 e2)      = cfOr (cfBExp e1) (cfBExp e2)
+cfBExp (ROp rop n1 n2) = cfRop rop (cfNExp n1) (cfNExp n2)
+
+
+cfNot :: BExp -> BExp 
+cfNot (BCte b) = BCte (not b)
+cfNot bexp     = Not bexp
+
+
+cfAnd :: BExp -> BExp -> BExp
+cfAnd (BCte b) bexp2 = if b then bexp2 else BCte False
+cfAnd bexp1     bexp2 = And bexp1 bexp2
+
+
+cfOr :: BExp -> BExp -> BExp
+cfOr (BCte b) bexp2 = if b then BCte True else bexp2
+cfOr bexp1     bexp2 = Or bexp1 bexp2
+
+
+cfRop :: RelOp -> NExp -> NExp -> BExp 
+cfRop rop (NCte n) (NCte k) = BCte (evalROP rop n k)
+cfRop rop nexp1    nexp2    = ROp rop nexp1 nexp2
+
+{-
+            evalBExp . cfBExp = evalBExp
+        Por ppio. de extensionalidad, es equivalente a demostrar que:
+           ∀x.∀m. (evalBExp . cfBExp) x m = evalBExp x m
+
+        Dem.:
+        Sea e un elemento de BExp. Sea m' un elemento de Memoria. 
+        Por ppio. de ind. sobre la estructura de e.
+
+        caso base 1, e = (BCte b)
+                  (evalBExp . cfBExp) (BCte b) m' = evalBExp (BCte b) m'
+        
+        caso base 2. e = (ROp rop n1 n2)
+                (evalBExp . cfBExp) (ROp rop n1 n2) m' = evalBExp (ROp rop n1 n2) m'
+
+        caso inductivo 1, e = (Not be)
+                HI) (evalBExp . cfBExp) be m' = evalBExp be m'
+                TI) (evalBExp . cfBExp) (Not be) m' = evalBExp (Not be) m'
+
+        caso inductivo 2, e = (And e1 e2)
+                HI1) (evalBExp . cfBExp) e1 m' = evalBExp e1 m'
+                HI2) (evalBExp . cfBExp) e2 m' = evalBExp e2 m'
+                TI)  (evalBExp . cfBExp) (And e1 e2) m' = evalBExp (And e1 e2) m'
+        
+        caso inductivo 3, e = (Or e1 e2)
+                HI1) (evalBExp . cfBExp) e1 m' = evalBExp e1 m'
+                HI2) (evalBExp . cfBExp) e2 m' = evalBExp e2 m'
+                TI)  (evalBExp . cfBExp) (Or e1 e2) m' = evalBExp (Or e1 e2) m'
+
+        
+
+
+
+        ||caso base 1, e = (BCte b)||
+
+                (evalBExp . cfBExp) (BCte b) m'
+            =                           (def. (.))
+                evalBExp (cfBExp (BCte b)) m'
+            =                           (def. cfBExp.1)
+                evalBExp (BCte b) m'
+
+
+        ||caso base 2, e = (ROp rop n1 n2)||
+
+                (evalBExp . cfBExp) (ROp rop n1 n2) m'
+            =                           (def. (.))
+                evalBExp (cfBExp (ROp rop n1 n2)) m'
+            =                           (def. cfBExp.5)
+                evalBExp (cfRop rop (cfNExp n1) (cfNExp n2)) m'
+            
+            ||subcaso (cfNExp n1) = (NCte k) y (cfNExp n2) = (NCte l)||
+            |LADO IZQ (continuación)
+            |        evalBExp (cfRop rop (NCte k) (NCte l)) m'
+            |    =                           (def. cfRop.1)
+            |        evalBExp (BCte (evalROP rop k l)) m'
+            |    =                           (def. evalBExp.1)
+            |        evalROP rop k l
+            |    
+            |LADO DER 
+            |        evalBExp (ROp rop n1 n2) m'
+            |    =                           (def. evalBExp.5)
+            |        evalROP rop (evalNExp n1 m') (evalNExp n2 m')
+            |    =                           (prop. ej1: ∀x.∀m. (evalNExp . cfNExp) x m = evalNExp x m)
+            |        evalROP rop ((evalNExp . cfNExp) n1 m') ((evalNExp . cfNExp) n2 m')
+            |    =                           (def. (.))
+            |        evalROP rop (evalNExp (cfNExp n1) m') (evalNExp (cfNExp n2) m')
+            |    =                           (subcaso)
+            |        evalROP rop (evalNExp (NCte k) m') (evalNExp (NCte l) m')
+            |    =                           (def. evalNExp.1)
+            |        evalROP rop k l
+
+            ||subcaso (cfNExp n1) != (NCte k) o (cfNExp n2) != (NCte l)||
+            |LADO IZQ (continuación)
+            |        evalBExp (cfRop rop (cfNExp n1) (cfNExp n2)) m'
+            |    =                           (def. cfRop.2)
+            |        evalBExp (ROp rop (cfNExp n1) (cfNExp n2)) m'
+            |    =                           (def. evalBExp. 5)
+            |        evalROP rop (evalNExp (cfNExp n1) m') (evalNExp (cfNExp n2) m')
+            |    =                           (def. (.))
+            |        evalROP rop ((evalNExp . cfNExp) n1 m') ((evalNExp . cfNExp) n2 m')
+            |    =                           (prop. ej1: ∀x.∀m. (evalNExp . cfNExp) x m = evalNExp x m)
+            |        evalROP rop (evalNExp n1 m') (evalNExp n2 m')
+            |    =                           (def. evalBExp.5)
+            |        evalBExp (ROp rop n1 n2) m'
+
+
+        ||caso inductivo 1, e = (Not be)||
+
+        LADO IZQ
+                (evalBExp . cfBExp) (Not be) m'
+            =                           (def. (.))
+                evalBExp (cfBExp (Not be)) m'
+            =                           (def. cfBExp.2)
+                evalBExp (cfNot (cfBExp be)) m'
+
+            ||subcaso (cfBExp be) = (BCte b)||
+            |
+            |LADO IZQ (continuación)
+            |        evalBExp (cfNot (BCte b)) m'
+            |    =                           (def. cfNot.1)
+            |        evalBExp (BCte (not b)) m'
+            |    =                           (def. evalBExp.1)
+            |        not b
+            |
+            |LADO DER
+            |        evalBExp (Not be) m'
+            |    =                           (def. evalBExp.2)
+            |        not (evalBExp be m')
+            |    =                           (HI)
+            |        not ((evalBExp . cfBExp) be m')
+            |    =                           (def. (.))
+            |        not (evalBExp (cfBExp be) m')
+            |    =                           (subcaso)
+            |        not (evalBExp (BCte b) m')
+            |    =                           (def. evalBExp.1)
+            |        not b
+
+
+            ||subcaso (cfBExp be) != (BCte b)||
+            |
+            |LADO IZQ (continuación)
+            |        evalBExp (cfNot (cfBExp be)) m'
+            |    =                           (def. cfNot.2)
+            |        evalBExp (Not (cfBExp be)) m'
+            |    =                           (def. evalBExp.2)
+            |        not (evalBExp (cfBExp be) m')
+            |    =                           (def. (.))
+            |        not ((evalBExp . cfBExp) be m')
+            |    =                           (HI)
+            |        not (evalBExp be m')
+            |    =                           (def. evalBExp.2)
+            |        evalBExp (Not be) m'
+
+        
+        ||caso inductivo 2, e = (And e1 e2)||
+        
+        LADO IZQ
+                (evalBExp . cfBExp) (And e1 e2) m'
+            =                           (def. (.))
+                evalBExp (cfBExp (And e1 e2)) m'
+            =                           (def. cfBExp.3)
+                evalBExp (cfAnd e1 e2) m'
+            
+            ||subcaso e1 = (BCte b)||
+            |LADO IZQ
+            |        evalBExp (cfAnd (BCte b) e2) m'
+            |    =                           (def. cfAnd.1)
+            |        evalBExp (if b then e2 else BCte False) m'
+            |    
+            |    ||subsubcaso b = True||
+            |    |LADO IZQ
+            |    |        evalBExp (if True then e2 else BCte False) m'
+            |    |    =                           (rama then del if)
+            |    |        evalBExp e2 m'
+            |    |    
+            |    |LADO DER
+            |    |        evalBExp (And e1 e2) m'
+            |    |    =                           (subsubcaso)
+            |    |        evalBExp (And (BCte True) e2) m'
+            |    |    =                           (def. evalBExp.3)
+            |    |        (evalBExp (BCtre True) m') && (evalBExp e2 m')
+            |    |    =                           (def. evalBExp.1)
+            |    |        True && (evalBExp e2 m')
+            |    |    =                           (Ley de Identidad &&)
+            |    |        evalBExp e2 m'
+            |    
+            |    
+            |    ||subsubcaso b = False||
+            |    |LADO IZQ
+            |    |        evalBExp (if False then e2 else BCte False) m'
+            |    |    =                           (rama else del if)
+            |    |        evalBExp (BCte False) m'
+            |    |    =                           (def. evalBExp.1)
+            |    |        False
+            |    |    
+            |    |LADO DER
+            |    |        evalBExp (And e1 e2) m'
+            |    |    =                           (subsubcaso)
+            |    |        evalBExp (And (BCte False) e2) m'
+            |    |    =                           (def. evalBExp.3)
+            |    |        (evalBExp (BCte False) m') && (evalBExp e2 m')
+            |    |    =                           (def. evalBExp.1)
+            |    |        False && (evalBExp e2 m')
+            |    |    =                           (def. &&)
+            |    |        False     
+
+
+            ||subcaso e1 != (BCte b)||
+            |
+            |LADO IZQ
+            |        evalBExp (cfBExp (And e1 e2)) m'
+            |    =                           (def. cfBExp.3)
+            |        evalBExp (cfAnd e1 e2) m'
+            |    =                           (def. cfAnd.2)
+            |        evalBExp (And e1 e2) m'
+                
+
+
+
+        ||caso inductivo 3, e = (Or e1 e2)||
+
+        LADO IZQ
+                (evalBExp . cfBExp) (Or e1 e2) m'
+            =                           (def. (.))
+                evalBExp (cfBExp (Or e1 e2)) m'
+            =                           (def. cfBExp.4)
+                evalBExp (cfOr e1 e2) m'
+            
+            ||subcaso e = (BCte b')||
+            |
+            |LADO IZQ
+            |        evalBExp (cfOr (BCte b') e2) m'
+            |    =                           (def. cfBExp.1)
+            |        evalBExp (if b' then BCte True else e2) m'
+            |    
+            |    ||subsubcaso b' = True||
+            |    |
+            |    |LADO IZQ
+            |    |    =                           (rama then del if)
+            |    |        evalBExp (BCte True) m'
+            |    |    =                           (def. evalBExp.1)
+            |    |        True
+            |    |
+            |    |LADO DER
+            |    |        evalBExp (Or e1 e2) m'
+            |    |    =                           (subsubcaso)
+            |    |        evalBExp (Or (BCte True) e2) m'
+            |    |    =                           (def. evalBExp.4)
+            |    |        (evalBExp (BCte True) m') || (evalBExp e2 m')
+            |    |    =                           (def. evalBExp.1)
+            |    |        True || (evalBExp e2 m')
+            |    |    =                           (def.||)
+            |    |        True
+            |
+            |    ||subsubcaso b' = False||
+            |    |
+            |    |LADO IZQ
+            |    |    =                           (rama else del if)
+            |    |        evalBExp e2 m'
+            |    |
+            |    |LADO DER
+            |    |        evalBExp (Or e1 e2) m'
+            |    |    =                           (def. evalBExp.4)
+            |    |        (evalBExp e1 m') || (evalBExp e2 m')
+            |    |    =                           (subsubcaso)
+            |    |        (evalBExp (BCte False) m') || (evalBExp e2 m')
+            |    |    =                           (def. evalBExp.1)
+            |    |        False || (evalBExp e2 m')
+            |    |    =                           (def.||)
+            |    |        evalBExp e2 m'
+
+
+            ||subcaso e != (BCte b')||
+            |
+            |LADO IZQ
+            |        evalBExp (cfOr e1 e2) m'
+            |    =                           (def. cfOr.2)
+            |        evalBExp (Or e1 e2) m'
+            
+                
+-}
