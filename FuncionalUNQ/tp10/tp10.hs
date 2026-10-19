@@ -449,3 +449,69 @@ cfRop rop nexp1    nexp2    = ROp rop nexp1 nexp2
             
                 
 -}
+
+
+-- ================================================================================= --
+--                                  EJERCICIO 3                                      --
+-- ================================================================================= --
+data Programa = Prog Bloque 
+type Bloque   = [Comando]
+data Comando  = Assign Nombre NExp
+              | If BExp Bloque Bloque
+              | While BExp Bloque
+type Nombre   = String
+
+
+evalProg :: Programa -> Memoria -> Memoria
+evalProg (Prog bl) = evalBloque bl 
+
+evalBloque :: Bloque -> Memoria -> Memoria
+evalBloque []     mem = mem
+evalBloque (c:cs) mem = let mem' = evalComando c mem
+                        in evalBloque cs mem'
+
+
+evalComando :: Comando -> Memoria -> Memoria 
+evalComando (Assign n e)      mem = recordar n (evalNExp e mem) mem
+evalComando (If be blq1 blq2) mem = if (evalBExp be mem) 
+                                then evalBloque blq1 mem 
+                                else evalBloque blq2 mem
+evalComando (While be blq)    mem = evalComando (If be (blq ++ [While be blq]) []) mem
+
+
+optimizeCf :: Programa -> Programa
+optimizeCf (Prog cs) = Prog (optimizeCS cs) 
+
+
+optimizeCS :: Bloque -> Bloque
+optimizeCS []     = []
+optimizeCS (c:cs) = optimizeC c ++ optimizeCS cs
+
+
+optimizeC :: Comando -> Bloque 
+optimizeC (Assign x ne)   = [Assign x ne]
+optimizeC (If be cs1 cs2) = cfIF (cfBExp be) (optimizeCS cs1) (optimizeCS cs2) 
+optimizeC (While be cs)   = cfWhile (cfBExp be) (optimizeCS cs)
+
+
+cfIF :: BExp -> Bloque -> Bloque -> Bloque
+cfIF (BCte True)  cs1 cs2 = cs1
+cfIF (BCte False) cs1 cs2 = cs2
+cfIF be cs1 cs2           = [If be cs1 cs2]
+
+
+cfWhile :: BExp -> Bloque -> Bloque 
+cfWhile (BCte False) cs = []
+cfWhile be cs           = [While be cs]
+
+
+{-
+    [
+        (Assign "f" (NCte 1)),
+        (If (ROp Eq (NBOp Add (NCte 3) (NCte 3)) (NCte 6)) [Assign "f" (NCte 3)] [Assign "f" (NBOp Add (NCte 10) (Var "f"))]),
+        (Assign "f" (NBOp Add (NCte 1) (Var "f")))
+    ]
+-}
+
+
+
