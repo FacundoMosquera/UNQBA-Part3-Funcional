@@ -1,3 +1,4 @@
+import Prelude hiding (scanr, zipWith, foldr1, foldr, filter, map)
 -- ================================================================================= --
 --                                  EJERCICIO 1                                      --
 -- ================================================================================= --
@@ -417,8 +418,696 @@ d)
         |    =                           (neutro de la suma)
         |        cantidadCapasQueCumplen f (soloLasCapasQue f p')
             
-
-
-
-
 -}  
+
+-- ================================================================================= --
+--                                  EJERCICIO 7                                      --
+-- ================================================================================= --
+--a)
+map :: (a -> b) -> [a] -> [b]
+map f []     = []
+map f (x:xs) = f x : map f xs
+
+
+--b)
+filter :: (a -> Bool) -> [a] -> [a]
+filter f []     = []
+filter f (x:xs) = if f x 
+                    then x : filter f xs
+                    else filter f xs
+
+--c)
+foldr :: (a -> b -> b) -> b -> [a] -> b
+foldr f z []     = z   
+foldr f z (x:xs) = f x (foldr f z xs)
+
+--d)
+recr :: b -> (a -> [a] -> b -> b) -> [a] -> b 
+recr z f []     = z 
+recr z f (x:xs) = f x xs (recr z f xs)
+
+--e)
+foldr1 :: (a -> a -> a) -> [a] -> a
+foldr1 f []     = error "La lista es vacía." 
+foldr1 f (x:xs) = if null xs then x else f x (foldr1 f xs) 
+
+--f)
+zipWith :: (a -> b -> c) -> [a] -> [b] -> [c]
+zipWith f []     ys = []
+zipWith f (x:xs) ys = case ys of 
+                    (y:ys') -> f x y : zipWith f xs ys
+                    []      -> []
+
+--g)
+scanr :: (a -> b -> b) -> b -> [a] -> [b]
+scanr f z []     = [z]
+scanr f z (x:xs) = let (b:bs) = (scanr f z xs)
+                    in f x b : b : bs
+
+
+-- ================================================================================= --
+--                                  EJERCICIO 8                                      --
+-- ================================================================================= --
+
+{-
+a)
+        map id = id
+    Por ppio. de extensionalidad, es equivalente a demostrar que:
+        ∀xs. map id xs = id xs
+    
+    Dem.: 
+    Sea zs una lista arbitraria. Por ppio. de ind. sobre la estructura de zs.
+
+    caso base, zs = []
+            map id [] = id []
+
+    caso inductivo, zs = (z:zs')
+            HI) map id zs' = id zs'
+            TI) map id (z:zs') = id (z:zs')
+
+    
+    ||caso base, zs = []||
+
+    LADO IZQ
+            map id [] 
+        =                           (def. map.1)
+            []
+    
+    LADO DER
+            id []
+        =                           (def. id)
+            []
+
+    
+    ||caso inductivo zs = (z:zs')||
+
+    LADO IZQ
+            map id (z:zs')
+        =                           (def. map.2)
+            id z : map id zs'
+        =                           (HI)
+            id z : id zs'
+        =                           (def. id)
+            z:zs'
+    
+    LADO DER
+            id (z:zs')
+        =                           (def. id)
+            z:zs'
+    
+
+
+
+
+b)
+        ∀f.∀g. map f . map g = map (f . g)
+    Por ppio. de extensionalidad, es equivalente a demostrar que: 
+        ∀xs. ∀f.∀g. (map f . map g) xs = map (f . g) xs
+    
+    Dem.:
+    Sean f y g funciones arbitrarias. Sea zs una lista arbitraria.
+    Por ppio. de ind. sobre la estructura de zs.
+
+    caso base, zs = []
+            (map f . map g) [] = map (f . g) []
+
+    caso inductivo, zs = (z:zs')
+            HI) (map f . map g) zs' = map (f . g) zs'
+            TI) (map f . map g) (z:zs') = map (f . g) (z:zs')
+
+
+    ||caso base, zs = []||
+
+    LADO IZQ
+            (map f . map g) []
+        =                           (def. (.))
+            map f (map g [])
+        =                           (def. map.1)
+            map f []
+        =                           (def. map.1)
+            []
+    
+    LADO DER
+            map (f . g) []
+        =                           (def. map.1)
+            []
+
+    
+    ||caso inductivo, zs = (z:zs')||
+
+    LADO IZQ
+            (map f . map g) (z:zs')
+        =                           (def. (.))
+            map f (map g (z:zs'))
+        =                           (def. map.2)
+            map f (g z : map g zs')
+        =                           (def. map.2)
+            f (g z) : map f (map g zs')
+    
+    LADO DER
+            map (f . g) (z:zs')
+        =                           (def. map.2)
+            (f . g) z : map (f . g) zs' 
+        =                           (HI)
+            (f . g) z : (map f . map g) zs'
+        =                           (def. (.))
+            f (g z) : map f (map g zs')
+
+
+
+
+c)
+        ∀f.∀xs.∀ys. map f (xs ++ ys) = map f xs ++ map f ys
+    
+    Dem.: 
+    Sea f una funcion arbitraria. Sean ws y zs listas arbitrarias.
+    Por ppio. de ind. sobre la estructura de ws.
+
+    caso base, ws = []
+            map f ([] ++ zs) = map f [] ++ map f zs
+    
+    caso inductivo, ws = (w:ws')
+            HI) map f (ws' ++ zs) = map f ws' ++ map f zs
+            TI) map f ((w:ws') ++ zs) = map f (w:ws') ++ map f zs
+
+
+    ||caso base, ws = []||
+
+    LADO IZQ
+            map f ([] ++ zs)
+        =                           (def. ++.1)
+            map f zs
+
+    LADO DER
+            map f [] ++ map f zs
+        =                           (def. map.1)
+            [] ++ map f zs
+        =                           (def. ++.1)
+            map f zs
+
+    
+
+    ||caso inductivo, ws = (w:ws')||
+
+    LADO IZQ
+            map f ((w:ws') ++ zs)
+        =                           (def. ++.2)
+            map f (w : (ws' ++ zs))
+        =                           (def. map.2)
+            f w : map f (ws' ++ zs)
+    
+    LADO DER
+            map f (w:ws') ++ map f zs
+        =                           (def. map.2)
+            f w : map f ws' ++ map f zs
+        =                           (HI)
+            f w : map f (ws' ++ zs)
+
+
+
+d)
+        ∀f. concat . map (map f) = map f . concat
+    Por ppio. de extensionalidad, es equivalente a demostrar que:
+        ∀xs.∀f. (concat . map (map f)) xs = (map f . concat) xs
+    
+    Dem.:
+    Sea f una función arbitraria. Sea xss una lista de listas.
+    Por ppio. de ind. sobre la estructura de xss.
+
+    caso base, xss = []
+            (concat . map (map f)) [] = (map f . concat) []
+    
+    caso inductivo, xss = (xs:xss')
+            HI) (concat . map (map f)) xss' = (map f . concat) xss'
+            TI) (concat . map (map f)) (xs:xss') = (map f . concat) (xs:xss')
+
+    
+    ||caso base, xss = []||
+
+    LADO IZQ
+            (concat . map (map f)) []
+        =                           (def. (.))
+            concat (map (map f) [])
+        =                           (def. map.1)
+            concat []
+        =                           (def. concat.1)
+            []
+
+    LADO DER
+            (map f . concat) []
+        =                           (def. (.))
+            map f (concat [])
+        =                           (def. concat.1)
+            map f []
+        =                           (def. map.1)
+            []
+
+
+    ||caso inductivo, xss = (xs:xss')||
+
+    LADO IZQ
+            (concat . map (map f)) (xs:xss')
+        =                           (def. (.))
+            concat (map (map f) (xs:xss'))
+        =                           (def. map.2)
+            concat (map f xs : map (map f) xss')
+        =                           (def. concat.2)
+            map f xs ++ concat (map (map f) xss')
+    
+    LADO DER
+            (map f . concat) (xs:xss')
+        =                           (def. (.))
+            map f (concat (xs:xss'))
+        =                           (def. concat.2)
+            map f (xs ++ (concat xss'))
+        =                           (prop. ∀f.∀xs.∀ys. map f (xs ++ ys) = map f xs ++ map f ys)
+            map f xs ++ map f (concat xss')
+        =                           (def. (.))
+            map f xs ++ (map f . concat) xss'
+        =                           (HI)
+            map f xs ++ (concat . map (map f)) xss'
+        =                           (def. (.))
+            map f xs ++ concat (map (map f) xss')
+
+
+
+
+e)
+        foldr ((+) . suma') 0 = sum . map suma'
+    Por ppio. de extensionalidad es equivalente a demostrar que:
+        ∀xs. foldr ((+) . suma') 0 xs = (sum . map suma') xs
+    
+    Dem.:
+    Sea xs una lista de pares de enteros. Por ppio. de ind. sobre la estructura de xs.
+
+    caso base, xs = []
+        foldr ((+) . suma') 0 [] = (sum . map suma') []
+
+    caso inductivo, xs = (x:xs')
+        HI) foldr ((+) . suma') 0 xs' = (sum . map suma') xs'
+        TI) foldr ((+) . suma') 0 (x:xs') = (sum . map suma') (x:xs')
+
+    
+    ||caso base, xs = []||
+
+    LADO IZQ
+            foldr ((+) . suma') 0 []
+        =                           (def. foldr.1)
+            0
+
+    LADO DER
+            (sum . map suma') []
+        =                           (def. (.))
+            sum (map suma' [])
+        =                           (def. map.1)
+            sum []
+        =                           (def. sum.1)
+            0
+
+
+    ||caso inductivo, xs = (x:xs')||
+
+    LADO IZQ
+            foldr ((+) . suma') 0 (x:xs')
+        =                           (def. foldr.2)
+            ((+) . suma') x (foldr ((+) . suma') 0 xs')
+        =                           (HI)
+            ((+) . suma') x ((sum . map suma') xs')
+        =                           (def. (.))
+            (+) (suma' x) (sum (map suma' xs'))
+        =                           (equivalencia infix del operador)
+            suma' x + sum (map suma' xs)
+
+    
+
+    LADO DER
+            (sum . map suma') (x:xs')
+        =                           (def. (.))
+            sum (map suma' (x:xs'))
+        =                           (def. map.2)
+            sum (suma' x : map suma' xs')
+        =                           (def. sum.2)
+            suma' x + sum (map suma' xs')
+
+        
+        
+f)
+        ∀f.∀z. foldr f z . foldr (:) [] = foldr f z
+    Por ppio. de extensionalidad es equivalente a demostrar que:
+        ∀xs.∀f.∀z. (foldr f z . foldr (:) []) xs = foldr f z xs
+    
+    Dem.:
+    Sea ws una lista arbitraria. Sea g una función. Sea e un elemento cualquiera.
+    Por ppio. de ind. sobre la estructura de ws.
+
+    caso base, ws = []
+            (foldr g e . foldr (:) []) [] = foldr g e []
+
+    caso inductivo, ws = (w:ws')
+            HI) (foldr g e . foldr (:) []) ws' = foldr g e ws'
+            TI) (foldr g e . foldr (:) []) (w:ws') = foldr g e (w:ws')
+
+
+
+    ||caso base, ws = []||
+
+            (foldr g e . foldr (:) []) []
+        =                           (def. (.))
+            foldr g e (foldr (:) [] [])
+        =                           (def. foldr.1)
+            foldr g e []
+
+    
+    ||caso inductivo, ws = (w:ws')||
+
+    LADO IZQ
+            (foldr g e . foldr (:) []) (w:ws')
+        =                           (def. (.))
+            foldr g e (foldr (:) [] (w:ws'))
+        =                           (def. foldr.2)
+            foldr g e ((:) w (foldr (:) [] ws'))
+        =                           (equivalencia infix del operador)
+            foldr g e (w : (foldr (:) [] ws'))
+        =                           (def. foldr.2)
+            g w (foldr g e (foldr (:) [] ws'))
+        =                           (def. (.))
+            g w ((foldr g e . foldr (:) []) ws')
+        =                           (HI)
+            g w (foldr g e ws')
+
+    
+    LADO DER
+            foldr g e (w:ws')
+        =                           (def. foldr.2)
+            g w (foldr g e ws')
+
+
+
+
+g)
+        ∀f.∀z.∀xs.∀ys. foldr f z (xs ++ ys) = foldr f (foldr f z ys) xs
+    
+    Dem.:
+    Sea g una función. Sea e un elemento. Sean ws y zs listas arbitrarias.
+    Por ppio. de ind. sobre la estructura de ws.
+
+    caso base, ws = []
+            foldr g e ([] ++ zs) = foldr g (foldr g e zs) []
+
+    caso inductivo, ws = (w:ws')
+            HI) foldr g e (ws' ++ zs) = foldr g (foldr g e zs) ws'
+            TI) foldr g e ((w:ws') ++ zs) = foldr g (foldr g e zs) (w:ws')
+
+    
+
+    ||caso base, ws = []||
+
+    LADO IZQ
+            foldr g e ([] ++ zs)
+        =                           (def. ++.1)
+            foldr g e zs
+
+    LADO DER
+            foldr g (foldr g e zs) []
+        =                           (def. foldr.1)
+            foldr g e zs
+
+
+    ||caso inductivo, ws = (w:ws')||
+
+    LADO IZQ
+            foldr g e ((w:ws') ++ zs)
+        =                           (def. ++.2)
+            foldr g e (w : ws' ++ zs)
+        =                           (def. foldr.2)
+            g w (foldr g e (ws' ++ zs))
+
+    LADO DER
+            foldr g (foldr g e zs) (w:ws')
+        =                           (def. foldr.2)
+            g w (foldr g (foldr g e zs) ws')
+        =                           (HI)
+            g w (foldr g e (ws' ++ zs))
+
+
+
+h)
+        (+1) . foldr (+) 0 = foldr (+) 1
+    Por ppio. de extensionalidad, es equivalente a demostrar que:
+        ∀xs. ((+1) . foldr (+) 0) xs = foldr (+) 1 xs
+    
+    Dem.:
+    Sea ws una lista arbitraria. Por ppio. de ind. sobre la estructura de ws.
+
+    caso base, ws = []
+            ((+1) . foldr (+) 0) [] = foldr (+) 1 []
+
+    caso inductivo, ws = (w:ws')
+            HI) ((+1) . foldr (+) 0) ws' = foldr (+) 1 ws'
+            TI) ((+1) . foldr (+) 0) (w:ws') = foldr (+) 1 (w:ws')
+
+    
+    ||caso base, ws = []||
+
+    LADO IZQ
+            ((+1) . foldr (+) 0) []
+        =                           (def. (.))
+            (+1) (foldr (+) 0 [])
+        =                           (def. foldr.1)
+            (+1) 0
+        =                           (def. +, con y<-1, x<-0)
+            1
+
+    LADO DER
+            foldr (+) 1 []
+        =                           (def. foldr.1)
+            1
+
+    
+    ||caso inductivo, ws = (w:ws')||
+
+    LADO IZQ
+            ((+1) . foldr (+) 0) (w:ws')
+        =                           (def. (.))
+            (+1) (foldr (+) 0 (w:ws'))
+        =                           (def. foldr.2)
+            (+1) ((+) w (foldr (+) 0 ws'))
+        =                           (equivalencia infix del operador suma)
+            (w + (foldr (+) 0 ws')) + 1
+        =                           (prop. conmutativa y asociativa de la suma)
+            1 + w + (foldr (+) 0 ws')
+
+    LADO DER
+            foldr (+) 1 (w:ws')
+        =                           (def. foldr.2)
+            (+) w (foldr (+) 1 ws')
+        =                           (HI)
+            (+) w (((+1) . foldr (+) 0) ws')
+        =                           (def. (.))
+            (+) w ((+1) (foldr (+) 0 ws'))
+        =                           (equivalencia infix del operador suma)
+            w + (1 + (foldr (+) 0 ws'))
+        =                           (prop. conmutativa y asociativa de la suma)
+            1 + w + (foldr (+) 0 ws')
+
+
+
+
+i)
+        ∀n.∀f. many n f = foldr (.) id (replicate n f)
+
+    Dem.: 
+    Sea k un entero >= 0. Sea g una función arbitraria.
+    Por ppio. de ind. sobre la estructura de k.
+
+    caso base, k = 0
+            many 0 g = foldr (.) id (replicate 0 g)
+
+    caso inductivo, k > 0
+            HI) many (k-1) g = foldr (.) id (replicate (k-1) g)    
+            TI) many k g = foldr (.) id (replicate k g)
+
+
+
+    ||caso base, k = 0||
+
+    LADO IZQ
+            many 0 g
+        =                           (def. many.1)
+            id
+    
+    LADO DER
+            foldr (.) id (replicate 0 g)
+        =                           (def. replicate.1)
+            foldr (.) id []
+        =                           (def. foldr.1)
+            []
+
+    
+    ||caso inductivo, k > 0||
+
+    LADO IZQ
+            many k g
+        =                           (def. many.2)
+            g . many (k-1) g
+
+    LADO DER
+            foldr (.) id (replicate k g)
+        =                           (def. replicate.2)
+            foldr (.) id (g: replicate (k-1) g)
+        =                           (def. foldr.2)
+            (.) g (foldr (.) id (replicate (k-1) g))
+        =                           (HI)
+            (.) g (many (k-1) g)
+        =                           (equivalencia infix del operador (.))
+            g . many (k-1) g
+
+
+j)
+        ∀f.∀xs.∀ys. zipWith (flip f) xs ys = map (uncurry f) (flip zip xs ys)
+    
+    Dem.:
+    Sea g una función. Sean ws y zs listas. Por ppio. de ind. sobre la estructura de ws.
+
+    caso base, ws = []
+            zipWith (flip g) [] zs = map (uncurry g) (flip zip [] zs)
+
+    caso inductivo, ws = (w:ws')
+            HI) zipWith (flip g) ws' zs = map (uncurry g) (flip zip ws' zs)
+            TI) zipWith (flip g) (w:ws') zs = map (uncurry g) (flip zip (w:ws') zs)
+
+    
+    ||caso base, ws = []||
+
+    LADO IZQ
+            zipWith (flip g) [] zs
+        =                           (def. zipWith.1)
+            []
+    
+    LADO DER
+            map (uncurry g) (flip zip [] zs)
+        =                           (def. flip)
+            map (uncurry g) (zip zs [])
+        =                           (def. zip)
+            map (uncurry g) []
+        =                           (def. map.1)
+            []
+
+    
+    ||caso inductivo, ws = (w:ws')||
+
+    LADO IZQ
+            zipWith (flip g) (w:ws') zs
+    
+    LADO DER
+            map (uncurry g) (flip zip (w:ws') zs)
+        =                           (def. flip)
+            map (uncurry g) (zip zs (w:ws'))
+    
+        ||subcaso zs = []||
+        |LADO IZQ (continuación)
+        |        zipWith (flip g) (w:ws') zs
+        |    =                           (def. zipWith.2, segunda ecuación del case)
+        |        []
+        |
+        |LADO DER (continuación)
+        |        map (uncurry g) (zip [] (w:ws'))
+        |    =                           (def. zip.2)
+        |        map (uncurry g) []
+        |    =                           (def. map.1)
+        |        []
+
+        ||subcaso zs = (z:zs')||
+        |LADO IZQ (continuación)
+        |        zipWith (flip g) (w:ws') (z:zs')
+        |    =                           (def. zipWith.2)
+        |        flip g w z : zipWith (flip g) ws' zs'
+        |    =                           (def. flip)
+        |        g z w : zipWith (flip g) ws' zs'
+        |    =                           (HI)
+        |        g z w : map (uncurry g) (flip zip ws' zs')
+        |    =                           (def. flip)
+        |        g z w : map (uncurry g) (zip zs' ws')
+        |
+        |
+        |LADO DER (continuación)
+        |        map (uncurry g) (flip zip (w:ws') (z:zs'))
+        |    =                           (def. flip)
+        |        map (uncurry g) (zip (z:zs') (w:ws'))
+        |    =                           (def. zip)
+        |        map (uncurry g) ((z,w) : zip zs' ws')
+        |    =                           (def. map.2)
+        |        (uncurry g) (z,w) : map (uncurry g) (zip zs' ws')
+        |    =                           (def. uncurry)
+        |        g z w : map (uncurry g) (zip zs' ws')
+            
+
+
+
+
+
+k)
+        ∀f.∀g.∀h.∀z.
+            si ∀x.∀y. h (f x y) = g x (h y), entonces h . foldr f z = foldr g (h z)
+    Por ppio. de extensionalidad es equivalente a demostrar que:
+        ∀xs. (h . foldr f z) xs = foldr g (h z) xs
+    
+    Dem.:
+    Sean f, g y h funciones. Sean x, y, z elementos. Sea xs una lista.
+    Por ppio. de ind. sobre la estructura de xs.
+
+    caso base, xs = []
+            (h . foldr f z) [] = foldr g (h z) []
+        
+    caso inductivo, xs = (x':xs')
+            HI) (h . foldr f z) xs' = foldr g (h z) xs'
+            TI) (h . foldr f z) (x':xs') = foldr g (h z) (x':xs')
+
+    
+    
+    ||caso base, xs = []||
+
+    LADO IZQ
+            (h . foldr f z) []
+        =                           (def. (.))
+            h (foldr f z [])
+        =                           (def. foldr.1)
+            h z
+
+    LADO DER 
+            foldr g (h z) []
+        =                           (def. foldr.1)
+            h z
+
+
+    ||caso inductivo xs = (x':xs')||
+
+    LADO IZQ
+            (h . foldr f z) (x':xs')
+        =                           (def. (.))
+            h (foldr f z (x':xs'))
+        =                           (def. foldr.2)
+            h (f x' (foldr f z xs'))
+    
+    LADO DER
+            foldr g (h z) (x':xs')
+        =                           (def. foldr.2)
+            g x' (foldr g (h z) xs')
+        =                           (HI)
+            g x' ((h . foldr f z) xs')
+        =                           (def. (.))
+            g x' (h (foldr f z xs'))
+
+
+    
+    Un ejemplo de este uso podría ser:
+    h = succ, f = suma, g = (+), x :: Int, y :: Int, z :: Int
+    El antecedente h (f x y) = g x (h y) quedaría:
+        succ (suma x y) = (+) x (succ y)
+    =                           (definiciones)
+        1 + (x + y) = x + (1 + y)
+    =                           (conmutatividad y asociatividad)
+        1 + x + y = 1 + x + y
+
+    Entonces, (succ . foldr suma 0) = foldr (+) (succ 0)
+-}
