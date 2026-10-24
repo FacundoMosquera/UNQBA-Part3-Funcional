@@ -1111,3 +1111,178 @@ k)
 
     Entonces, (succ . foldr suma 0) = foldr (+) (succ 0)
 -}
+
+
+
+-- ================================================================================= --
+--                                  EJERCICIO 9                                      --
+-- ================================================================================= --
+--a)
+sum :: [Int] -> Int 
+sum = foldr (+) 0
+
+--b)
+length :: [a] -> Int 
+length = foldr ((+) . const 1) 0
+
+--c)
+map' :: (a -> b) -> [a] -> [b]
+map' f = foldr ((:) . f) [] 
+
+--d)
+filter' :: (a -> Bool) -> [a] -> [a]
+filter' f = foldr h []
+        where h x r = if f x then x:r else r    -- si hubiera hecho filter = \f -> ..., la variable f no estaría dentro del scope del where
+
+--e)
+find :: (a -> Bool) -> [a] -> Maybe a 
+find f = foldr (\ x r -> if f x then Just x else Nothing) Nothing
+
+--f)
+any :: (a -> Bool) -> [a] -> Bool 
+any = \p -> foldr ((||) . p) False
+
+--g)
+all :: (a -> Bool) -> [a] -> Bool 
+all = \p -> foldr ((&&) . p) True
+
+--h)
+countBy :: (a -> Bool) -> [a] -> Int 
+countBy = \f -> foldr ((+) . fromEnum . f) 0
+
+--i)
+partition :: (a -> Bool) -> [a] -> ([a], [a])
+partition f = foldr (\x (y,n) -> if f x then (x:y,n) else (y,x:n)) ([], [])
+
+--j)
+zipWith' :: (a -> b -> c) -> [a] -> [b] -> [c]
+zipWith' f = foldr h (\ys -> [])
+        where h x g ys = case ys of 
+                            (y:ys') -> f x y : g ys'
+                            _       -> []
+
+--k)
+scanr' :: (a -> b -> b) -> b -> [a] -> [b]
+scanr' = \f z -> foldr (\x (y:ys) -> f x y : y : ys) [z]
+
+--l)
+takeWhile :: (a -> Bool) -> [a] -> [a]
+takeWhile = \f -> foldr (\x ys -> if f x then x : ys else []) []
+
+--m)
+take :: Int -> [a] -> [a]
+take = flip (foldr h (\n -> []))
+        where h x frec n = if n>0 then x : frec (n-1) else []
+
+--n)
+drop :: Int -> [a] -> [a]
+drop = flip (foldr (\x fr n -> if n==0 then x:fr n else fr (n-1)) (\n -> []))
+
+--o)
+elemAt :: Int -> [a] -> a 
+elemAt = flip (foldr (\x fr n -> if n==0 then x else fr (n-1)) 
+                     (\n -> error "No hay un elemento en el índice dado"))
+
+
+
+
+
+-- ================================================================================= --
+--                                  EJERCICIO 10                                     --
+-- ================================================================================= --
+
+{-
+a)
+    filter :: (a -> Bool) -> [a] -> [a]
+    id :: (b -> b)
+    ----------------------------------- a <- b, b <- Bool
+    filter id :: [Bool] -> [Bool]
+
+
+
+b)
+    map                   :: (a -> b) -> ([a] -> [b])
+    (\x y z -> (x, y, z)) :: c -> d -> e -> (c,d,e)
+    ------------------------------------------------- a <- c, b <- (d -> e -> (c,d,e))
+    map (\x y z -> (x, y, z)) :: [c] -> [d -> e -> (c,d,e)]
+
+
+
+c)
+    map :: (a -> b) -> [a] -> [b]
+    (+) :: Int -> Int -> Int
+    ----------------------------- a <- Int, b <- (Int -> Int)
+    map (+) :: [Int] -> [Int -> Int]
+
+
+
+d)
+    filter :: (a -> Bool) -> [a] -> [a]
+    fst :: (b,c) -> b
+    ----------------------------------- a <- (b,c), b <- Bool
+    filter fst :: [(Bool, c)] -> [(Bool, c)]
+
+
+
+e)
+    filter :: (z -> Bool) -> [z] -> [z]
+    (flip const (+)) :: a -> a 
+    ----------------------------------- z <- a, a <- Bool 
+    filter (flip const (+)) :: [Bool] -> [Bool]
+
+    
+    flip :: (a -> b -> c) -> b -> a -> c
+    const :: a' -> b' -> a' 
+    ------------------------------------ a' <- a, b'<- b, c <- a
+    flip const :: b -> a -> a
+    (+) :: Int -> Int -> Int
+    ------------------------------------ b <- (Int -> Int -> Int)
+    flip const (+) :: a -> a
+
+
+
+
+f)
+    map :: (a -> b) -> [a] -> [b]
+    const :: c -> d -> c
+    ----------------------------- c <- a, b <- (d -> c)
+    map const :: [a] -> [d -> a]
+
+
+
+g)
+    map :: (a -> b) -> [a] -> [b]
+    twice :: (a' -> a') -> a' -> a'
+    ------------------------------- a <- (a' -> a'), b <- (a' -> a')
+    map twice :: [a' -> a'] -> [a' -> a']
+
+
+
+
+h)
+    foldr :: (a -> b -> b) -> b -> [a] -> b
+    twice :: (t -> t) -> t -> t
+    --------------------------------------- a <- (t -> t), b <- t
+    foldr twice :: t -> [t -> t] -> t
+
+
+
+
+i)
+    zipWith :: (a -> b -> c) -> [a] -> [b] -> [c]
+    fst :: (s,t) -> s
+    --------------------------------------------- a <- (s,t), s <- (b -> c)
+    zipWith fst :: [(b -> c, t)] -> [b] -> [c]
+
+
+
+
+j)
+    foldr                   :: (a -> b -> b) -> b -> [a] -> b
+    (\x r z -> (x,z) : r z) :: p -> (q -> [(p,q)]) -> q -> [(p,q)]
+    ------------------------------------------------------------ a <- p, b <- (q -> [(p,q)])
+    foldr (\x r z -> (x,z) : r z) :: (q -> [(p,q)]) -> [p] -> q -> [(p,q)]
+    (const []) :: d -> [c]
+    -------------------------------------------------------------------- d <- q, c <- (p,q)
+    foldr (\x r z -> (x,z) : r z) (const []) :: [p] -> q -> [(p,q)]
+-}
