@@ -126,3 +126,43 @@ theAnswerToLifeUniverseAndEverythingElseTree =
                  theAnswerToLifeUniverseAndEverythingElseTree
 
 -- ft2t (FT (\_ -> Just 42)) = theAnswerToLifeUniverseAndEverythingElseTree
+
+----------------------- Árboles generales (Rose trees) -----------------------
+data GTree a = GNode a [GTree a] 
+        deriving Show
+
+gt :: GTree Int 
+gt = GNode 1 [ GNode 2 [GNode 5 [], GNode 6 []], 
+               GNode 3 [GNode 7 []], 
+               GNode 4 []]
+
+sumGT' :: GTree Int -> Int 
+sumGT' (GNode x ts) = x + (sum . map sumGT) ts
+
+sumGT'' :: GTree Int -> Int 
+sumGT'' (GNode x ts) = x + foldr ((+) . sumGT') 0 ts
+
+foldGT0 :: (a -> [b] -> b) -> GTree a -> b --No es estructural pq no hay garantía que h trate a la lista estructuralmente
+foldGT0 h (GNode x ts) = h x (map (foldGT0 h) ts)
+
+foldGT1 :: (a -> c -> b) -> (b -> c -> c) -> c -> GTree a -> b --Esta función sí es completamente estructural pero es complicada.
+foldGT1 g f z (GNode x ts) = g x (foldr f z (map (foldGT1 g f z) ts))
+
+foldGT :: (a -> c -> b) -> ([b] -> c) -> GTree a -> b  --Esta función no es estructural, pero es fácil de que lo sea.
+foldGT g h (GNode x ts) = g x (h (map (foldGT g h) ts))--Solamente hay poner como condición que h sea estructural.
+
+
+sumGT0 :: GTree Int -> Int
+sumGT0 = foldGT0 (\n ns -> n + sum ns)
+
+sumGT1 :: GTree Int -> Int 
+sumGT1 = foldGT1 (+) (+) 0 
+
+sumGT :: GTree Int -> Int
+sumGT = foldGT (+) sum
+
+mirrorGT :: GTree a -> GTree a 
+mirrorGT = foldGT GNode reverse
+
+depthGT :: GTree a -> Int 
+depthGT = foldGT ((+) . const 1) (\ns -> if null ns then 0 else maximum ns)
