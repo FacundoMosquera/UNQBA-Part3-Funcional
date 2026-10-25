@@ -139,3 +139,23 @@ recExpA :: (Int -> b) -> (ExpA -> ExpA -> b -> b -> b) -> (ExpA -> ExpA -> b -> 
 recExpA c s p (Cte n) = c n 
 recExpA c s p (Suma e1 e2) = s e1 e2 (recExpA c s p e1) (recExpA c s p e2)
 recExpA c s p (Prod e1 e2) = p e1 e2 (recExpA c s p e1) (recExpA c s p e2)
+
+--e)
+cantDeSumaCeros :: ExpA -> Int 
+cantDeSumaCeros = recExpA (const 0) 
+                         (\e1 e2 n1 n2 -> (fromEnum (opConConstante 0 e1 e2)) + n1 + n2 )
+                         (\e1 e2 n1 n2 -> n1 + n2)
+
+
+opConConstante :: Int -> ExpA -> ExpA -> Bool 
+opConConstante n (Cte m) _  = n==m
+opConConstante n _  (Cte m) = n==m
+opConConstante n _  _       = False 
+
+
+cantDeProdUnos :: ExpA -> Int 
+cantDeProdUnos = recExpA (const 0)
+                         (\e1 e2 n1 n2 -> n1 + n2)
+                         (\e1 e2 n1 n2 -> (fromEnum (opConConstante 1 e1 e2)) + n1 + n2)
+
+                         
