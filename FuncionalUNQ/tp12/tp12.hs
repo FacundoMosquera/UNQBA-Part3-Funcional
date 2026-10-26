@@ -284,3 +284,353 @@ c)
             =                                         (HI1, HI2)
                   evalBOp bop (evalEA' e1) (evalEA' e2)
 -}
+
+-- ================================================================================= --
+--                                  EJERCICIO 3                                      --
+-- ================================================================================= --
+data Tree a = EmptyT | NodeT a (Tree a) (Tree a) deriving Show
+
+--a)
+foldT :: (a -> b -> b -> b) -> b -> Tree a -> b 
+foldT f z EmptyT          = z
+foldT f z (NodeT x t1 t2) = f x (foldT f z t1) (foldT f z t2)
+
+
+--b)
+mapT :: (a -> b) -> Tree a -> Tree b 
+mapT f = foldT (NodeT . f) EmptyT
+
+
+sumT :: Tree Int -> Int 
+sumT = foldT (\n n1 n2 -> n + n1 + n2) 0
+
+
+sizeT :: Tree a -> Int 
+sizeT = foldT (\x n1 n2 -> 1 + n1 + n2) 0 
+
+
+heighT :: Tree a -> Int 
+heighT = foldT (\x n1 n2 -> 1 + max n1 n2) 0
+
+
+preOrder :: Tree a -> [a]
+preOrder = foldT (\x zs ys -> x : zs ++ ys) []
+
+
+inOrder :: Tree a -> [a]
+inOrder = foldT (\x zs ys -> zs ++ [x] ++ ys) []
+
+
+postOrder :: Tree a -> [a]
+postOrder = foldT (\x zs ys -> zs ++ ys ++ [x]) []
+
+
+mirrorT :: Tree a -> Tree a 
+mirrorT = foldT (flip . NodeT) EmptyT
+
+
+countByT :: (a -> Bool) -> Tree a -> Int
+countByT f = foldT (\x n1 n2 -> (fromEnum . f) x + n1 + n2) 0
+
+
+partitionT :: (a -> Bool) -> Tree a -> ([a], [a])
+partitionT f = foldT juntarParticiones ([],[])
+      where juntarParticiones x (ts1, fs1) (ts2, fs2) = if f x
+                                                        then (x:ts1++ts2, fs1++fs2)
+                                                        else (ts1++ts2,x:fs1++fs2)
+
+
+zipWithT :: (a -> b -> c) -> Tree a -> Tree b -> Tree c 
+zipWithT f = foldT zipArboles (\t -> EmptyT)
+      where zipArboles x g1 g2 tb = case tb of 
+                                    (NodeT y tb1 tb2) -> NodeT (f x y) (g1 tb1) (g2 tb2)
+                                    EmptyT            -> EmptyT
+
+
+caminoMasLargo :: Tree a -> [a]
+caminoMasLargo = foldT (\x l1 l2 -> if length l1 > length l2 then x:l1 else x:l2) []
+
+
+todosLosCaminos :: Tree a -> [[a]]
+todosLosCaminos = foldT (\x l1 l2 -> appendToAll x l1 l2) []
+            where appendToAll x xss yss = let finAca = if null xss || null yss then [[x]] else []
+                                          in finAca ++ map (x:) (xss ++ yss) 
+
+
+todosLosNiveles :: Tree a -> [[a]]
+todosLosNiveles = foldT (\x ls1 ls2 -> [x] : zipLevels ls1 ls2) []
+
+zipLevels :: [[a]] -> [[a]] -> [[a]]
+zipLevels = foldr h id
+      where h xs g yss = case yss of
+                          (ys:yss') -> (xs ++ ys) : g yss'
+                          []        -> xs : g []            
+
+
+nivelN :: Tree a -> Int -> [a]
+nivelN = foldT f (\n -> [])
+      where f x g1 g2 n = if n==0 then [x] else g1 (n-1) ++ g2 (n-1)
+
+
+
+t1 :: Tree Int 
+t1 = NodeT 5 (NodeT 5 EmptyT (NodeT 5 EmptyT EmptyT))
+            EmptyT
+t2 :: Tree Int
+t2 = NodeT 2 (NodeT 2 EmptyT EmptyT)
+             (NodeT 2 EmptyT EmptyT)
+
+t3 :: Tree Int 
+t3 = NodeT 5 (NodeT 7 EmptyT 
+                      (NodeT 1  EmptyT 
+                                EmptyT))
+             (NodeT 2 (NodeT 3  (NodeT 42 EmptyT EmptyT) 
+                                EmptyT)
+                      (NodeT 15 EmptyT 
+                                EmptyT))
+
+bst :: Tree Int 
+bst = NodeT 5 (NodeT 4 (NodeT 2 EmptyT EmptyT) EmptyT)
+              (NodeT 7 EmptyT EmptyT)
+
+
+
+--c)
+recT :: b -> (a -> Tree a -> Tree a -> b -> b -> b) -> Tree a -> b
+recT z f EmptyT          = z
+recT z f (NodeT x t1 t2) = f x t1 t2 (recT z f t1) (recT z f t2)
+
+
+--d)
+insertT :: Ord a => a -> Tree a -> Tree a 
+--INV. REP.: El árbol es un BST.
+insertT e = recT (NodeT e EmptyT EmptyT) h 
+      where h x t1 t2 r1 r2 = if e==x 
+                              then NodeT e t1 t2 
+                              else if e<x 
+                                    then NodeT x r1 t2
+                                    else NodeT x t1 r2
+
+
+caminoHasta :: Eq a => a -> Tree a -> [a]
+--PRE.: El elemento existe en el árbol
+caminoHasta x = recT [] f
+      where f y t1 t2 r1 r2 = if x==y then [x] 
+                              else if elem x r1 then y:r1
+                                                else y:r2
+
+caminoHasta' :: Eq a => a -> Tree a -> [a]
+caminoHasta' x t = case maybeCamino x t of
+                  Nothing -> error "El elemento no existe en el árbol"
+                  Just xs -> xs
+
+maybeCamino :: Eq a => a -> Tree a -> Maybe [a]
+maybeCamino x = foldT h Nothing 
+      where h y (Just xs) _ = Just (y:xs)
+            h y _ (Just ys) = Just (y:ys)
+            h y _  _        = if x==y then Just [y] else Nothing  
+
+
+{-
+e)
+i)
+            ∀f. sizeT . mapT f = sizeT
+      Por ppio. de extensionalidad es equivalente a demostrar que:
+            ∀t.∀f. (sizeT . mapT f) t = sizeT t 
+      
+      Dem.: 
+      Sea t' un elemento de Tree a. Por ppio. de ind. sobre la estructura de t'.
+
+      caso base, t' = EmptyT
+                  (sizeT . mapT f) EmptyT = sizeT EmptyT
+
+      caso inductivo, t' = (NodeT x t1 t2)
+                  HI1) (sizeT . mapT f) t1 = sizeT t1
+                  HI2) (sizeT . mapT f) t2 = sizeT t2
+                  TI)  (sizeT . mapT f) (NodeT x t1 t2) = sizeT (NodeT x t1 t2)
+
+      
+      ||caso base, t' = EmptyT||
+
+                  (sizeT . mapT f) EmptyT
+            =                                         (def. (.))
+                  sizeT (mapT f EmptyT)
+            =                                         (def. mapT.1)
+                  sizeT EmptyT
+
+      
+      ||caso inductivo, t' = (NodeT x t1 t2)||
+
+      LADO IZQ
+                  (sizeT . mapT f) (NodeT x t1 t2)
+            =                                         (def. (.))
+                  sizeT (mapT f (NodeT x t1 t2))
+            =                                         (def.mapT)
+                  sizeT (foldT (NodeT . f) EmptyT (NodeT x t1 t2))
+            =                                         (def. foldT.2)
+                  sizeT ((NodeT . f) x (foldT (NodeT . f) EmptyT t1) (foldT (NodeT . f) EmptyT t2))
+            =                                         (def. mapT)
+                  sizeT ((NodeT . f) x (mapT f t1) (mapT f t2))
+            =                                         (def. (.))
+                  sizeT (NodeT (f x) (mapT f t1) (mapT f t2))
+            =                                         (def. sizeT)
+                  foldT (\x n1 n2 -> 1 + n1 + n2) 0 (NodeT (f x) (mapT f t1) (mapT f t2))
+            =                                         (def. foldT.2)
+                  (\x n1 n2 -> 1 + n1 + n2) (f x) (foldT (\x n1 n2 -> 1 + n1 + n2) 0 (mapT f t1))
+                                                  (foldT (\x n1 n2 -> 1 + n1 + n2) 0 (mapT f t2))
+            =                                         (def. sizeT)
+                  (\x n1 n2 -> 1 + n1 + n2) (f x) (sizeT (mapT f t1)) (sizeT (mapT f t2))
+            =                                         (def. beta)
+                  1 + (sizeT (mapT f t1)) + (sizeT (mapT f t2))
+            =                                         (def. (.))
+                  1 + ((sizeT . mapT f) t1) + ((sizeT . mapT f) t2)
+            =                                         (HI1, HI2)
+                  1 + sizeT t1 + sizeT t2
+      
+
+      LADO DER
+                  sizeT (NodeT x t1 t2)
+            =                                         (def. sizeT)
+                  foldT (\x n1 n2 -> 1 + n1 + n2) 0 (NodeT x t1 t2)
+            =                                         (def. foldT.2)
+                  (\x n1 n2 -> 1 + n1 + n2) x (foldT (\x n1 n2 -> 1 + n1 + n2) 0 t1)
+                                              (foldT (\x n1 n2 -> 1 + n1 + n2) 0 t2)
+            =                                         (def. sizeT)
+                  (\x n1 n2 -> 1 + n1 + n2) x (sizeT t1) (sizeT t2)
+            =                                         (def. beta)
+                  1 + sizeT t1 + sizeT t2
+
+
+
+
+
+
+ii)
+            ∀f.∀g. mapT f . mapT g = mapT (f . g)
+      Por ppio. de extensionalidad es equivalente a demostrar que: 
+            ∀t. ∀f.∀g. (mapT f . mapT g) t = mapT (f . g) t
+      
+      Dem.:
+      Sean f y g funciones. Sea t' un elemento de Tree a.
+      Por ppio. de ind. sobre la estructura de t'.
+
+      caso base, t' = EmptyT
+                  (mapT f . mapT g) EmptyT = mapT (f . g) EmptyT
+
+      caso inductivo, t' = (NodeT x t1 t2)
+                  HI1) (mapT f . mapT g) t1 = mapT (f . g) t1
+                  HI2) (mapT f . mapT g) t2 = mapT (f . g) t2
+                  TI)  (mapT f . mapT g) (NodeT x t1 t2) = mapT (f . g) (NodeT x t1 t2)
+
+
+      
+      ||caso base, t' = EmptyT||
+
+      LADO IZQ
+                  (mapT f . mapT g) EmptyT
+            =                                         (def. (.))
+                  mapT f (mapT g EmptyT)
+            =                                         (def. mapT)}
+                  mapT f ((foldT (NodeT . g) EmptyT) EmptyT)
+            =                                         (def. foldT.1)
+                  mapT f Empty
+            =                                         (def. mapT)
+                  foldT (NodeT . f) EmptyT EmptyT
+            =                                         (def. foldT.1)
+                  EmptyT
+
+      LADO DER
+                  mapT (f . g) EmptyT
+            =                                         (def. mapT)
+                  foldT (NodeT . (f . g)) EmptyT EmptyT
+            =                                         (def. foldT.1)
+                  EmptyT
+
+
+
+      ||caso inductivo, t' = (NodeT x t1 t2)||
+
+      LADO IZQ
+                  (mapT f . mapT g) (NodeT x t1 t2)
+            =                                         (def. (.))
+                  mapT f (mapT g (NodeT x t1 t2))
+            =                                         (def. mapT)
+                  foldT (NodeT . f) EmptyT (foldT (NodeT . g) EmptyT (NodeT x t1 t2))
+            =                                         (def. foldT.2)
+                  foldT (NodeT . f) EmptyT ((NodeT . g) x (foldT (NodeT . g) EmptyT t1)
+                                                          (foldT (NodeT . g) EmptyT t2))
+            =                                         (def. mapT)
+                  foldT (NodeT . f) EmptyT ((NodeT . g) x (mapT g t1) (mapT g t2))
+            =                                         (def. (.))
+                  foldT (NodeT . f) EmptyT ((NodeT (g x) (mapT g t1) (mapT g t2))
+            =                                         (def. foldT.2)
+                  (NodeT . f) (g x) (foldT (NodeT . f) EmptyT (mapT g t1)) 
+                                    (foldT (NodeT . f) EmptyT (mapT g t2))
+            =                                         (def. mapT)
+                  (NodeT . f) (g x) (mapT f (mapT g t1)) (mapT f (mapT g t2))
+            =                                         (def. (.))
+                  NodeT (f (g x)) ((mapT f . mapT g) t1) ((mapT f . mapT g) t2)
+            =                                         (HI1, HI2)
+                  NodeT (f (g x)) (mapT (f . g) t1) (mapT (f . g) t2)
+      
+
+      LADO DER
+                  mapT (f . g) (NodeT x t1 t2)
+            =                                         (def. mapT)
+                  foldT (NodeT . (f . g)) EmptyT (NodeT x t1 t2)
+            =                                         (def. foldT.2)
+                  NodeT ((f . g) x) (foldT (NodeT . (f . g)) EmptyT t1) (foldT (NodeT . (f . g)) EmptyT t2)
+            =                                         (def. mapT)
+                  NodeT ((f . g) x) (mapT (f . g) t1) (mapT (f . g) t2)
+            =                                         (def. (.))
+                  NodeT (f (g x)) (mapT (f . g) t1) (mapT (f . g) t2)
+
+
+
+
+
+
+
+
+iii)
+            foldT NodeT EmptyT = id 
+      Por ppio. de extensionalidad es equivalente a demostrar que:
+            ∀t. foldT NodeT EmptyT t = id t
+      
+      Dem.: 
+      Sea t' un elemento de Tree a. Por ppio. de ind. sobre la estructura de t'.
+
+      caso base, t' = EmptyT
+                  foldT NodeT EmptyT EmptyT = id EmptyT
+
+      caso inductivo, t' = (NodeT x t1 t2)
+                  HI1) foldT NodeT EmptyT t1 = id t1
+                  HI2) foldT NodeT EmptyT t2 = id t2
+                  TI)  foldT NodeT EmptyT (NodeT x t1 t2) = id (NodeT x t1 t2)
+
+      
+      ||caso base, t' = EmptyT||
+
+                  foldT NodeT EmptyT EmptyT
+            =                                         (def. foldT.1)
+                  EmptyT
+            =                                         (def. id)
+                  id EmptyT
+
+      
+      ||caso inductivo, t' = (NodeT x t1 t2)||
+
+                  foldT NodeT EmptyT (NodeT x t1 t2)
+            =                                         (def. foldT.2)
+                  NodeT x (foldT NodeT EmptyT t1) (foldT NodeT EmptyT t2)
+            =                                         (HI1, HI2)
+                  NodeT x (id t1) (id t2)
+            =                                         (def. id)
+                  NodeT x t1 t2
+            =                                         (def. id)
+                  id (NodeT x t1 t2)
+
+-}
+
+
+
