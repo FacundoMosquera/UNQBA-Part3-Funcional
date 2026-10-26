@@ -158,4 +158,129 @@ cantDeProdUnos = recExpA (const 0)
                          (\e1 e2 n1 n2 -> n1 + n2)
                          (\e1 e2 n1 n2 -> (fromEnum (opConConstante 1 e1 e2)) + n1 + n2)
 
-                         
+
+
+-- ================================================================================= --
+--                                  EJERCICIO 2                                      --
+-- ================================================================================= --
+data EA = Const Int | BOp BinOp EA EA 
+data BinOp = Sum | Mul
+
+--a)
+foldEA :: (Int -> b) -> (BinOp -> b -> b -> b) -> EA -> b
+foldEA f g (Const n)       = f n
+foldEA f g (BOp bop e1 e2) = g bop (foldEA f g e1) (foldEA f g e2)
+
+--b)
+noTieneNegativosExplicitosEA :: EA -> Bool 
+noTieneNegativosExplicitosEA = allEA (>=0) (\op -> True)
+
+allEA :: (Int -> Bool) -> (BinOp -> Bool) -> EA -> Bool 
+allEA p q = foldEA p ((\b1 b2 b3 -> b1 && b2 && b3) . q)
+
+
+simplificarEA' :: EA -> EA 
+simplificarEA' = foldEA Const simplificarOpEA
+
+simplificarOpEA :: BinOp -> EA -> EA -> EA 
+simplificarOpEA Mul e1 e2 = simplificarMulEA e1 e2 
+simplificarOpEA Sum e1 e2 = simplificarSumEA e1 e2 
+
+simplificarMulEA :: EA -> EA -> EA 
+simplificarMulEA (Const 1) e = e
+simplificarMulEA e (Const 1) = e
+simplificarMulEA e1 e2 = if esConstanteDe 0 e1 || esConstanteDe 0 e2 then Const 0 else BOp Mul e1 e2  
+
+simplificarSumEA :: EA -> EA -> EA 
+simplificarSumEA (Const 0) e = e 
+simplificarSumEA e (Const 0) = e 
+simplificarSumEA e1 e2       = BOp Sum e1 e2 
+
+
+esConstanteDe :: Int -> EA -> Bool 
+esConstanteDe n (Const m) = n==m 
+esConstanteDe _ _         = False
+
+
+evalEA' :: EA -> Int 
+evalEA' = foldEA id evalBOp 
+
+evalBOp :: BinOp -> (Int -> Int -> Int)
+evalBOp Mul = (*)
+evalBOp Sum = (+)
+
+
+showEA :: EA -> String 
+showEA = foldEA (\n -> "(Const " ++ show n ++ ")")
+                (\bop s1 s2 -> "(" ++ s1 ++ " " ++ showBOp bop ++ " " ++ s2 ++ ")")
+
+showBOp :: BinOp -> String 
+showBOp Mul = "*"
+showBOp Sum = "+"
+
+ea2ExpA' :: EA -> ExpA 
+ea2ExpA' = foldEA Cte sumaOrProd
+      where sumaOrProd Sum = Suma 
+            sumaOrProd Mul = Prod
+
+
+data ABTree  a b   = Leaf b | Node a (ABTree a b) (ABTree a b)
+
+ea2Arbol' :: EA -> ABTree BinOp Int 
+ea2Arbol' = foldEA Leaf Node 
+
+{-
+c)
+            evalEA' = evalEA
+      Por ppio. de extensionalidad es equivalente a demostrar que:
+            ∀x. evalEA' x = evalEA x
+      
+      Dem.:
+      Sea e un elemento de EA. Por ppio. de ind. sobre la estructura de e.
+
+      caso base, e = (Const n)
+            evalEA' (Const n) = evalEA (Const n)
+      
+      caso inductivo, e = (BOp bop e1 e2)
+            HI1) evalEA' e1 = evalEA e1 
+            HI2) evalEA' e2 = evalEA e2 
+            TI)  evalEA' (BOp bop e1 e2) = evalEA' (BOp bop e1 e2)
+
+      
+      ||caso base, e = (Const n)||
+
+      LADO IZQ 
+                  evalEA' (Const n)
+            =                                         (def. evalEA')
+                  foldEA id evalBOp (Const n)
+            =                                         (def. foldEA.1)
+                  id n
+            =                                         (def. id)
+                  n
+      
+
+      LADO DER
+                  evalEA (Const n)
+            =                                         (def. evalEA.1)
+                  n
+
+
+
+      ||caso inductivo, e = (BOp bop e1 e2)||
+
+      LADO IZQ
+                  evalEA' (BOp bop e1 e2)
+            =                                         (def. evalEA')
+                  foldEA id evalBOp (BOp bop e1 e2)
+            =                                         (def. foldEA.2)
+                  evalBOp bop (foldEA id evalBOp e1) (foldEA id evalBOp e2)
+            =                                         (def. evalEA')
+                  evalBOp bop (evalEA' e1) (evalEA' e2)
+
+      LADO DER 
+                  evalEA (BOp bop e1 e2)
+            =                                         (def. evalEA.2)
+                  evalBOp bop (evalEA e1) (evalEA e2)
+            =                                         (HI1, HI2)
+                  evalBOp bop (evalEA' e1) (evalEA' e2)
+-}
