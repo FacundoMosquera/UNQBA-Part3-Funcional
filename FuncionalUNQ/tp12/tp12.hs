@@ -1,3 +1,4 @@
+import Prelude hiding (product)
 -- ================================================================================= --
 --                                  EJERCICIO 1                                      --
 -- ================================================================================= --
@@ -664,8 +665,8 @@ project :: (f -> Bool) -> Table f v -> Table f v
 project g = map (filter (g . fst))
  
 --c)
-conjunt :: (a -> Bool) -> (a -> Bool) -> a -> Bool 
-conjunt f g = (uncurry (&&) . appFork (f,g))
+conjunct :: (a -> Bool) -> (a -> Bool) -> a -> Bool 
+conjunct f g = (uncurry (&&) . appFork (f,g))
 
 
 appFork :: (a -> b, a -> c) -> a -> (b, c)
@@ -702,3 +703,192 @@ data Query f v = Table [Record f v] --Table (Table f v)
                | Product (Query f v) (Query f v)
                | Projection (f -> Bool) (Query f v)
                | Selection (Record f v -> Bool) (Query f v)
+
+--a)
+foldQ :: ([Record f v] -> b) -> (b -> b -> b) -> 
+            ((f -> Bool) -> b -> b) -> ((Record f v -> Bool) -> b -> b) -> Query f v -> b 
+foldQ t pd pj s (Table rs)       = t rs
+foldQ t pd pj s (Product q1 q2)  = pd (foldQ t pd pj s q1) (foldQ t pd pj s q2)
+foldQ t pd pj s (Projection f q) = pj f (foldQ t pd pj s q) 
+foldQ t pd pj s (Selection  f q) = s f (foldQ t pd pj s q) 
+
+
+--b)
+tables :: Query f v -> [Table f v]
+tables = foldQ (:[]) (++) (flip const) (flip const)
+
+
+execute :: Query f v  -> Table f v 
+execute = foldQ id product project select 
+
+
+compact :: Query f v  -> Query f v  
+compact = foldQ Table Product compProjection compSelection 
+
+compProjection :: (f -> Bool) -> Query f v -> Query f v  
+compProjection f (Projection g q) = Projection (\x -> f x && g x) q 
+compProjection f query            = Projection f query
+
+
+compSelection :: (Record f v -> Bool) -> Query f v -> Query f v 
+compSelection f (Selection g q) = Selection (\x -> f x && g x) q 
+compSelection f query           = Selection f query
+
+
+
+{-
+b)
+            execute . compact = execute 
+      Por ppio. de extensionalidad es equivalente a demostrar que:
+            ∀q. (execute . compact) q = execute q
+      
+      Dem.:
+      Sea q' un elemento de Query f v. Por ppio. de ind. sobre la estructura de q'.
+
+      caso base, q' = (Table rs)
+                  (execute . compact) (Table rs) = execute (Table rs)
+
+      caso inductivo 1, q' = (Product q1 q2)
+                  HI1) (execute . compact) q1 = execute q1
+                  HI2) (execute . compact) q2 = execute q2
+                  TI)  (execute . compact) (Product q1 q2) = execute (Product q1 q2)
+
+      caso inductivo 2, q' = (Projection f q)
+                  HI) (execute . compact) q = execute q
+                  TI) (execute . compact) (Projection f q) = execute (Projection f q)
+
+      caso inductivo 3, q' = (Selection f q)
+                  HI) (execute . compact) q = execute q
+                  TI) (execute . compact) (Selection f q) = execute (Selection f q)
+
+
+      ||caso base, q' = (Table rs)||
+
+                  (execute . compact) (Table rs)
+            =                                         (def. (.))
+                  execute (compact (Table rs))
+            =                                         (def. compact)
+                  execute (foldQ Table Product compProjection compSelection (Table rs))
+            =                                         (def. foldQ.1)
+                  execute (Table rs)
+      
+
+      ||caso inductivo 1, q' = (Product q1 q2)||
+
+      LADO IZQ      
+                  (execute . compact) (Product q1 q2) 
+            =                                         (def. (.))
+                  execute (compact (Product q1 q2))
+            =                                         (def. compact)
+                  execute (foldQ Table Product compProjection compSelection (Product q1 q2))
+            =                                         (def. foldQ.2)
+                  execute (Product (foldQ Table Product compProjection compSelection q1) (foldQ Table Product compProjection compSelection q2))
+            =                                         (def. compact)
+                  execute (Product (compact q1) (compact q2))
+            =                                         (def. execute)
+                  foldQ id product project select (Product (compact q1) (compact q2))
+            =                                         (def. foldQ.2)
+                  product (foldQ id product project select (compact q1)) (foldQ id product project select (compact q2)) 
+            =                                         (def. execute)
+                  product (execute (compact q1)) (execute (compact q2))
+            =                                         (def. (.))
+                  product ((execute . compact) q1) ((execute . compact) q2)
+            =                                         (HI1,HI2)
+                  product (execute q1) (execute q2)
+
+      LADO DER
+                  execute (Product q1 q2)
+            =                                         (def. execute)
+                  foldQ id product project select (Product q1 q2)
+            =                                         (def. foldQ.2)
+                  product (foldQ id product project select q1) (foldQ id product project select q2)
+            =                                         (def. execute)
+                  product (execute q1) (execute q2)
+
+      
+      ||caso inductivo 2, q' = (Projection f q)||
+
+      LADO IZQ
+                  (execute . compact) (Projection f q)
+            =                                         (def. (.))
+                  execute (compact (Projection f q))
+            =                                         (def. compact)
+                  execute (foldQ Table Product compProjection compSelection (Projection f q))
+            =                                         (def. foldQ.3)
+                  execute (compProjection f (foldQ Table Product compProjection compSelection q))
+            =                                         (def. compact)
+                  execute (compProjection f (compact q))
+      
+      LADO DER
+                  execute (Projection f q)
+            =                                         (def. execute)
+                  foldQ id product project select (Projection f q)
+            =                                         (def. foldQ.3)
+                  project f (foldQ id product project select q)
+            =                                         (def. execute)
+                  project f (execute q)
+            =                                         (HI)
+                  project f ((execute . compact) q)
+            
+            ||subcaso compact q = (Projection g q1)||
+            |
+            |LADO IZQ (continuación)
+            |            execute (compProjection f (Projection g q1))
+            |      =                                         (def. compProjection)
+            |            execute (Projection (\x -> f x && g x) q1)
+            |      =                                         (def. execute)
+            |            foldQ id product project select (Projection (\x -> f x && g x) q1)
+            |      =                                         (def. foldQ.3)
+            |            project (\x -> f x && g x) (foldQ id product project select q1)
+            |      =                                         (def. execute)
+            |            project (\x -> f x && g x) (execute q1)
+            |
+            |LADO DER (continuación)
+            |            project f ((execute . compact) q)
+            |      =                                         (def. (.))
+            |            project f (execute (compact q))
+            |      =                                         (subcaso)
+            |            project f (execute (Projection g q1))
+            |      =                                         (def. execute)
+            |            project f (foldQ id product project select (Projection g q1))
+            |      =                                         (def. foldQ.3)
+            |            project f (project g (foldQ id product project select q1))
+            |      =                                         (def. execute)
+            |            project f (project g (execute q1))
+            |      =                                         (def. project)
+            |            map (filter (f . fst)) (map (filter (g . fst)) (execute q1))
+            |      =                                         (def (.))
+            |            (map (filter (f . fst)) . map (filter (g . fst))) (execute q1)
+            |      =                                         (prop. ∀f.∀g. map f . map g = map (f . g))
+            |            map (filter (f . fst) . filter (g . fst))) (execute q1)
+            |      =                                         (prop. ∀f.∀g. filter f . filter g = filter (\x -> f x && g x))
+            |            map (filter (\x -> (f . fst) x && (g . fst) x)) (execute q1)
+            |      =                                         (prop. (\x -> (f . fst) x && (g . fst) x) = (\x -> f x && g x) . fst )
+            |            map (filter ((\x -> f x && g x) . fst)) (execute q1)
+            |      =                                         (def. project)
+            |            project (\x -> f x && g x) (execute q1)
+            
+            ||subcaso compact q != (Projection g q1)||
+            |
+            |LADO IZQ (continuación)
+            |            execute (compProjection f (compact q))
+            |      =                                         (def. compProjection.2)
+            |            execute (Projection f (compact q))
+            |      =                                         (def. execute)
+            |            foldQ id product project select (Projection f (compact q))
+            |      =                                         (def. foldQ.3)
+            |            project f (foldQ id product project select (compact q))
+            |      =                                         (def. (.))
+            |            project f ((foldQ id product project select . compact) q)
+            |      =                                         (HI)
+            |            project f (foldQ id product project select q)
+            |      =                                         (def. foldQ.3)
+            |            foldQ id product project select (Projection f q)
+            |      =                                         (def. execute)
+            |            execute (Projection f q)
+                  
+            
+      ||caso inductivo 3 se resuelve exactamente igual que el 2, pero con s
+
+            
+-}
