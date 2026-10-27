@@ -1,3 +1,4 @@
+import Data.Char (ord)
 twice :: (a -> a) -> a -> a
 twice f x =  f (f x)
 
@@ -166,3 +167,36 @@ mirrorGT = foldGT GNode reverse
 
 depthGT :: GTree a -> Int 
 depthGT = foldGT ((+) . const 1) (\ns -> if null ns then 0 else maximum ns)
+
+
+recr :: b -> (a -> [a] -> b -> b) -> [a] -> b 
+recr z f []     = z 
+recr z f (x:xs) = f x xs (recr z f xs)
+
+
+--Mi solución
+scoreOfAString :: String -> Int
+scoreOfAString ss = let ascii = map ord ss
+                    in foldr (\(a,b) n -> abs (a-b) + n) 0 (pairWith ascii)
+
+pairWith :: [a] -> [(a,a)]
+pairWith = recr [] (\x xs pairs -> case xs of
+                                []       -> []
+                                (x':xs') -> (x,x'):pairs)  
+
+--solución del video
+sos :: String -> Int 
+sos = sum . map abs . mapAdjacent (-) . map ord
+
+mapAdjacent :: (a -> a -> b) -> [a] -> [b]
+mapAdjacent f = recr [] (\x xs bs -> case xs of 
+                                     (x':xs') -> f x x' : bs
+                                     []       -> [])
+--se puede evitar uno de los maps usando el operador .:, que aplica una operacion unaria al resultado de haber
+--aplicado una operación binaria.
+sos' :: String -> Int 
+sos' = sum . mapAdjacent (abs .: (-)) . map ord
+
+
+(.:) :: (c -> d) -> (a -> b -> c) -> a -> b -> d 
+(.:) f g x y = f (g x y) 
