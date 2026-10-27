@@ -664,8 +664,8 @@ project :: (f -> Bool) -> Table f v -> Table f v
 project g = map (filter (g . fst))
  
 --c)
-conjuct :: (a -> Bool) -> (a -> Bool) -> a -> Bool 
-conjuct f g = (uncurry (||) . appFork (f,g))
+conjunt :: (a -> Bool) -> (a -> Bool) -> a -> Bool 
+conjunt f g = (uncurry (&&) . appFork (f,g))
 
 
 appFork :: (a -> b, a -> c) -> a -> (b, c)
@@ -692,3 +692,13 @@ similar = foldr removeOccur []
 
 lookUp :: Eq f => f -> Record f v -> Maybe v
 lookUp = flip (foldr (\p g f -> if fst p==f then Just (snd p) else g f) (\f-> Nothing))
+
+
+
+-- ================================================================================= --
+--                                  EJERCICIO 5                                      --
+-- ================================================================================= --
+data Query f v = Table [Record f v] --Table (Table f v)
+               | Product (Query f v) (Query f v)
+               | Projection (f -> Bool) (Query f v)
+               | Selection (Record f v -> Bool) (Query f v)
