@@ -634,3 +634,61 @@ iii)
 
 
 
+
+-- ================================================================================= --
+--                                  EJERCICIO 4                                      --
+-- ================================================================================= --
+type Record f v = [(f,v)]
+
+ejemplo :: Record String String 
+ejemplo = [("nombre","Grace"),("apellido","H"),("edad", "42"),("género","F"),("salario","120")]
+
+type Table f v = [Record f v]
+
+personas :: Table String String
+personas = [
+      [("nombre","Graciela"),("apellido","H") ,("edad", "42"),("género","F"),("salario","120")], 
+      [("nombre","Alonso"),("apellido","Ch") ,("edad", "35"),("género","M"),("salario","250")], 
+      [("nombre","Adela"),("apellido","G"), ("edad", "39"),("género","F"),("salario","130")], 
+      [("nombre","Fer"),("apellido","R"), ("edad", "22"),("género","X"),("salario","100")], 
+      [("nombre","Felipe"),("apellido","W"),("edad", "50"),("género","M"),("salario","280")]
+      ]
+
+
+--a)
+select :: (Record f v -> Bool) -> Table f v -> Table f v 
+select = filter
+
+--b)
+project :: (f -> Bool) -> Table f v -> Table f v 
+project g = map (filter (g . fst))
+ 
+--c)
+conjuct :: (a -> Bool) -> (a -> Bool) -> a -> Bool 
+conjuct f g = (uncurry (||) . appFork (f,g))
+
+
+appFork :: (a -> b, a -> c) -> a -> (b, c)
+appFork (f, g) x = (f x, g x)
+
+
+--d)
+crossWith :: (a -> b -> c) -> [a] -> [b] -> [c]
+crossWith f = foldr (\x g ys -> map (f x) ys ++ g ys) (\ys -> [])
+
+
+--e)
+product :: Table f v -> Table f v -> Table f v 
+product = crossWith (++)
+
+
+--f)
+similar :: Eq f => Record f v -> Record f v
+similar = foldr removeOccur []
+      where removeOccur (f,v) rs = case lookUp f rs of 
+                                    Nothing -> (f,v):rs
+                                    Just _  -> rs 
+
+
+lookUp :: Eq f => f -> Record f v -> Maybe v
+lookUp = flip (foldr (\p g f -> if fst p==f then Just (snd p) else g f) (\f-> Nothing))
