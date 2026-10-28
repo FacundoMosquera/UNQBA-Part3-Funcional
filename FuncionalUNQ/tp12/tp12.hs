@@ -1,4 +1,4 @@
-import Prelude hiding (product)
+import Prelude hiding (Right, Left, product)
 -- ================================================================================= --
 --                                  EJERCICIO 1                                      --
 -- ================================================================================= --
@@ -888,7 +888,147 @@ b)
             |            execute (Projection f q)
                   
             
-      ||caso inductivo 3 se resuelve exactamente igual que el 2, pero con s
+      ||caso inductivo 3 se resuelve exactamente igual que el 2, pero con selection||
 
             
 -}
+
+
+-- ================================================================================= --
+--                                  EJERCICIO 6                                      --
+-- ================================================================================= --
+data Dir = Left | Straight | Right deriving Show
+data Mapa a = Cofre [a]
+            | Nada (Mapa a)
+            | Bifurcacion [a] (Mapa a) (Mapa a)
+
+------------------------------ Ejemplos para testear ------------------------------
+mapa :: Mapa Int
+mapa = Bifurcacion [] (Nada (Cofre [1,2])) (Cofre [3])
+
+mapa2 :: Mapa Int
+mapa2 = Bifurcacion [1, 3] (Nada (Bifurcacion [5] (Cofre [7, 8]) 
+                                                  (Nada (Nada (Cofre []))))) 
+                           (Bifurcacion [] (Nada (Nada (Cofre [10, 12])))     
+                                           (Bifurcacion [9, 11] (Cofre []) 
+                                                                (Cofre [20, 21])))
+-----------------------------------------------------------------------------------
+
+--a)
+foldM :: ([a] -> b) -> (b -> b) -> ([a] -> b -> b -> b) -> Mapa a -> b 
+foldM f g h (Cofre xs)             = f xs
+foldM f g h (Nada m)               = g (foldM f g h m)
+foldM f g h (Bifurcacion xs m1 m2) = h xs (foldM f g h m1) (foldM f g h m2)
+
+
+recM :: ([a] -> b) -> (Mapa a -> b -> b) -> ([a] -> Mapa a -> Mapa a -> b -> b -> b) -> Mapa a -> b 
+recM f g h (Cofre xs)             = f xs
+recM f g h (Nada m)               = g m (recM f g h m)
+recM f g h (Bifurcacion xs m1 m2) = h xs m1 m2 (recM f g h m1) (recM f g h m2)
+
+
+--b)
+objects :: Mapa a -> [a]
+objects = foldM id id (\l1 l2 l3 -> l1 ++ l2 ++ l3)
+
+
+mapM :: (a -> b) -> Mapa a -> Mapa b 
+mapM f = foldM (Cofre . map f) Nada (Bifurcacion . map f)
+
+
+has :: (a -> Bool) -> Mapa a -> Bool
+has p = foldM (any p) id (\xs b1 b2 -> any p xs || b1 || b2)
+
+
+hasObjectAt :: (a -> Bool) -> Mapa a -> [Dir] -> Bool
+hasObjectAt p = foldM dirCofre dirNada dirBif 
+      where dirCofre xs ds     = case ds of 
+                                  [] -> any p xs 
+                                  _  -> False
+            dirNada fr ds      = case ds of
+                                 (Straight:ds') -> fr ds' 
+                                 _              -> False 
+            dirBif xs r1 r2 ds = case ds of 
+                                 (Left:ds')  -> r1 ds' 
+                                 (Right:ds') -> r2 ds'
+                                 []          -> any p xs
+                                 _           -> False
+
+
+longestPath :: Mapa a -> [Dir]
+longestPath = foldM (const []) (Straight:) (\xs l1 l2 -> if length l1 > length l2 then Left:l1 else Right:l2)
+
+
+objectsOfLongestPath :: Mapa a -> [a]
+objectsOfLongestPath = subst collect longestPath
+
+
+collect :: Mapa a -> [Dir] -> [a]
+collect = foldM const collN collB 
+      where collN r ds = case ds of 
+                          (Straight:ds') -> r ds'
+                          _              -> []
+            collB xs r1 r2 ds = case ds of
+                                (Left:ds')  -> xs ++ r1 ds'
+                                (Right:ds') -> xs ++ r2 ds'  
+                                _           -> xs 
+
+
+subst :: (a -> b -> c) -> (a -> b) -> a -> c 
+subst f g x = f x (g x)
+
+
+allPaths :: Mapa a -> [[Dir]]
+allPaths = foldM (const []) (appendToAll Straight) (\xs dsl dsr -> appendToAll Left dsl ++ appendToAll Right dsr)
+      where appendToAll x []  = [[x]]
+            appendToAll x xss = map (x:) xss 
+
+
+objectsPerLevel :: Mapa a -> [[a]]
+objectsPerLevel = foldM (:[]) ([]:) (\xs l1 l2 -> xs : zipLevels l1 l2)
+
+{-
+c)
+            ∀x. has (==x) = any (elem x) . objectsPerLevel
+      Por ppio. de extensionalidad es equivalente a demostrar que:
+            ∀m. ∀x. has (==x) m = (any (elem x) . objectsPerLevel) m
+      
+      Dem.:
+      Sea e un elemento. Sea m' un elemento de Mapa a.
+      Por ppio. de ind. sobre la estructura de m'.
+
+      caso base, m' = (Cofre xs)
+                  has (==e) (Cofre xs) = (any (elem e) . objectsPerLevel) (Cofre xs)
+
+      caso inductivo, m' = (Nada ms)
+                  HI) has (==e) ms = (any (elem e) . objectsPerLevel) ms
+                  TI) has (==e) (Nada ms) = (any (elem e) . objectsPerLevel) (Nada ms)
+
+      caso inductivo, m' = (Bifurcacion xs m1 m2)
+                  HI1) has (==e) m1 = (any (elem e) . objectsPerLevel) m1
+                  HI2) has (==e) m2 = (any (elem e) . objectsPerLevel) m2
+                  TI)  has (==e) (Bifurcacion xs m1 m2) = (any (elem e) . objectsPerLevel) (Bifurcacion xs m1 m2)
+
+      
+      ||caso base, m' = (Cofre xs)||
+
+      LADO IZQ
+                  has (==e) (Cofre xs)
+            =                                         (def. has)
+                  foldM (any (==e)) id (\xs b1 b2 -> any p xs || b1 || b2) (Cofre xs)
+            =                                         (def. foldM.1)
+                  any (==e) xs
+      
+      LADO DER
+                  (any (elem e) . objectsPerLevel) (Cofre xs)
+            =                                         (def. (.))
+                  any (elem e) (objectsPerLevel (Cofre xs))
+            =                                         (def. objectsPerLevel)
+                  any (elem e) (foldM (:[]) ([]:) (\xs l1 l2 -> xs : zipLevels l1 l2) (Cofre xs))
+            =                                         (def. foldM.1)
+                  any (elem e) (:[]) xs
+            =                                         (def. (:))
+                  any (elem e) [xs]
+
+-}
+
