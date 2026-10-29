@@ -691,8 +691,8 @@ similar = foldr removeOccur []
                                     Just _  -> rs 
 
 
-lookUp :: Eq f => f -> Record f v -> Maybe v
-lookUp = flip (foldr (\p g f -> if fst p==f then Just (snd p) else g f) (\f-> Nothing))
+lookUp :: Eq k => k -> [(k,v)] -> Maybe v
+lookUp = flip (foldr (\p g k -> if fst p==k then Just (snd p) else g k) (\k-> Nothing))
 
 
 
@@ -1186,4 +1186,94 @@ nivelNGT = foldGT (\x r n -> if n==0 then [x] else r (n-1))
 apply :: (a -> b) -> a -> b 
 apply f x = f x
 
+
+
+-- ================================================================================= --
+--                                  EJERCICIO 8                                      --
+-- ================================================================================= --
+type Name = String 
+type Content = String 
+type Path = [Name]
+data FileSystem = File Name Content
+                | Folder Name [FileSystem]
+                deriving Show
+
+
+------------------------------ Ejemplos para testear ------------------------------
+fsGrande :: FileSystem
+fsGrande =
+  Folder "root"
+    [ File "readme.txt" "bienvenido"
+    , File "vacio.txt" ""
+    , Folder "docs"
+        [ File "tp1.hs" "main = print 1"
+        , File "readme.txt" "docs readme"          
+        , Folder "viejos" []                       
+        , Folder "imgs"
+            [ File "a.png" "AAAA"
+            , File "b.png" "BB"
+            ]
+        ]
+    , Folder "src"
+        [ Folder "lib"
+            [ Folder "utils"
+                [ File "utils.hs" "module Utils where"
+                , File "readme.txt" "utils readme"   
+                ]
+            ]
+        , File "main.hs" "import Utils"
+        ]
+    , Folder "docs" [ File "extra.txt" "otra docs" ] 
+    ]
+-----------------------------------------------------------------------------------
+
+--a)
+foldFS :: (Name -> Content -> b) -> (Name -> c -> b) -> ([b] -> c) -> FileSystem -> b
+foldFS f g h (File n c)    = f n c
+foldFS f g h (Folder n fs) = g n (h (map (foldFS f g h) fs))
+
+recFS :: (Name -> Content -> b) -> (Name -> [FileSystem] -> c -> b) -> ([b] -> c) -> FileSystem -> b 
+recFS f g h (File n c)    = f n c
+recFS f g h (Folder n fs) = g n fs (h (map (recFS f g h) fs))
+
+
+--b)
+amountOfFiles :: FileSystem -> Int 
+amountOfFiles = foldFS (\n c -> 1) ((+) . const 0) sum 
+
+
+find :: Name -> FileSystem -> Maybe Content 
+find name = foldFS (\n c -> if n==name then Just c else Nothing) (flip const) findMaybe
+
+findMaybe :: [Maybe a] -> Maybe a
+findMaybe = foldr g Nothing 
+      where g (Just x) mb = Just x 
+            g mb (Just x) = Just x 
+            g _  _        = Nothing
+
+
+pathOf :: Name -> FileSystem -> Path 
+--PREC.: el nombre existe en el filesystem.
+pathOf name = (extraerPath . maybePathOf name)
+      where extraerPath mb = case mb of 
+                              Just p  -> p 
+                              Nothing -> error "El archivo no existe en el filesystem."
+
+
+maybePathOf :: Name -> FileSystem -> Maybe Path 
+maybePathOf name = foldFS (\n c -> if n==name then Just [n] else Nothing) joinPath  findMaybe
+      where joinPath n mb = case mb of 
+                              Just p  -> Just (n:p)
+                              Nothing -> Nothing
+
+
+mapContents :: (Content -> Content) -> FileSystem -> FileSystem
+mapContents f = foldFS (\n c -> File n (f c)) Folder id
+
+
+targetedMapContents :: [(Name, Content -> Content)] -> FileSystem -> FileSystem 
+targetedMapContents pair = foldFS mapIfApplies Folder id
+      where mapIfApplies n c = case lookUp n pair of 
+                                    Just f  -> File n (f c)
+                                    Nothing -> File n c
 
