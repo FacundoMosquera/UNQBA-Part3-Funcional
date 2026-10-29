@@ -1032,3 +1032,158 @@ c)
 
 -}
 
+
+
+-- ================================================================================= --
+--                                  EJERCICIO 7                                      --
+-- ================================================================================= --
+data GTree a = GNode a [GTree a]
+      deriving Show
+
+
+------------------------------ Ejemplos para testear ------------------------------
+gtree :: GTree Int 
+gtree = GNode 1 [GNode 10 [], 
+                 GNode 20 [GNode 200 [], 
+                           GNode 210 [GNode 2100 []], 
+                           GNode 220 []], 
+                 GNode 30 [GNode 300 []] ]
+
+gtree42 :: GTree Int 
+gtree42 = GNode 42 [GNode 42 [GNode 42 []], GNode 42 []]
+-----------------------------------------------------------------------------------
+
+{-
+a)
+Dar tipo y definir las tres versiones de foldGT y recGT, que expresan los
+esquemas de recursión estructural y primitiva, respectivamente, para la
+estructura GTree.
+ATENCIÓN: recordar que no siguen la secuencia dada para tipos recurslvos
+con recursión directa, porque la recursión en GTree NO es directa. Estas
+versiones deben tener en cuenta el esquema de recursión sobre listas
+correspondiente, como se trató en clase teórica.
+-}
+
+foldGT0 :: (a -> [b] -> b) -> GTree a -> b
+foldGT0 f (GNode x ts) = f x (map (foldGT0 f) ts)
+
+foldGT1 :: (a -> c -> b) -> (b -> c -> c) -> c -> GTree a -> b 
+foldGT1 f g z (GNode x ts) = f x (foldr (g . foldGT1 f g z) z ts) 
+
+foldGT :: (a -> c -> b) -> ([b] -> c) -> GTree a -> b 
+foldGT f g (GNode x ts) = f x (g (map (foldGT f g) ts))
+
+
+recGT0 :: (a -> [GTree a] -> [b] -> b) -> GTree a -> b
+recGT0 f (GNode x ts) = f x ts (map (recGT0 f) ts)
+
+recGT1 :: (a -> [GTree a] -> c -> b) -> (b -> [b] -> c -> c) -> c -> GTree a -> b
+recGT1 f g z (GNode x ts) = f x ts (recr z g (map (recGT1 f g z) ts))
+
+recGT :: (a -> [GTree a] -> c -> b) -> ([b] -> c) -> GTree a -> b 
+recGT f g (GNode x ts) = f x ts (g (map (recGT f g) ts))
+
+
+recr :: b -> (a -> [a] -> b -> b) -> [a] -> b 
+recr z f []     = z 
+recr z f (x:xs) = f x xs (recr z f xs)
+
+
+
+--b)
+mapGT :: (a -> b) -> GTree a -> GTree b 
+mapGT f = foldGT (GNode . f) id 
+
+mapGT0 :: (a -> b) -> GTree a -> GTree b 
+mapGT0 f = foldGT0 (GNode . f)
+
+mapGT1 :: (a -> b) -> GTree a -> GTree b 
+mapGT1 f = foldGT1 (GNode . f) (:) []
+
+
+sumGT :: GTree Int -> Int 
+sumGT = foldGT (+) sum
+
+
+sizeGT :: GTree a -> Int 
+sizeGT = foldGT ((+) . const 1) sum
+
+
+heightGT :: GTree a -> Int 
+heightGT = foldGT ((+) . const 1) (\ns -> if null ns then 0 else maximum ns)
+
+
+flat :: [[a]] -> [a]
+flat = foldr (++) []
+
+preOrderGT :: GTree a -> [a]
+preOrderGT = foldGT (:) flat
+
+
+postOrderGT :: GTree a -> [a]
+postOrderGT = foldGT (flip (++) . (:[])) flat
+
+
+mirrorGT :: GTree a -> GTree a
+mirrorGT = foldGT GNode reverse
+
+
+countByGT :: (a -> Bool) -> GTree a -> Int 
+countByGT p = foldGT ((+) . fromEnum . p) sum
+
+
+partitionGT :: (a -> Bool) -> GTree a -> ([a], [a])
+partitionGT p = foldGT1 (\x (t,f) -> if p x then (x:t,f) else (t,x:f))
+                        (\(t1,f1) (t2,f2) -> (t1++t2, f1++f2))
+                        ([],[])
+
+
+zipWithGT :: (a -> b -> c) -> GTree a -> GTree b -> GTree c
+zipWithGT f = foldGT (\x r (GNode y ty) -> GNode (f x y) (r ty))
+                     zipFX
+            where zipFX = foldr (\f r xs -> case xs of 
+                                             []      -> []
+                                             (x:xs') -> f x : r xs')
+                                (\xs -> [])
+
+
+caminoMasLargoGT :: GTree a -> [a]
+caminoMasLargoGT = foldGT (:) (\xss -> if null xss then [] else maxList xss)
+            where maxList = recr (error "La lista esta vacía.") (\xs xss r -> if null xss 
+                                                                              then xs
+                                                                              else if length xs > length r
+                                                                                    then xs 
+                                                                                    else r)
+
+
+todosLosCaminosGT :: GTree a -> [[a]]
+todosLosCaminosGT = foldGT (\x xss -> if null xss then [[x]] else map (x:) xss) (foldr (++) [])
+
+
+todosLosNivelesGT :: GTree a -> [[a]]
+todosLosNivelesGT = foldGT (\x xss -> [x] : xss) (foldr zipLevels [])
+
+
+caminoHastaGT :: Eq a => a -> GTree a -> [a]
+caminoHastaGT x =  (extraerCamino . maybeCaminoGT x)
+      where extraerCamino m = case m of   
+                              Nothing -> error "El elemento no está en el árbol."
+                              Just xs -> xs
+
+maybeCaminoGT :: Eq a => a -> GTree a -> Maybe [a]
+maybeCaminoGT x = foldGT (\y mb -> if x==y then Just [y] else case mb of
+                                                              Just xs -> Just (y:xs)
+                                                              Nothing -> Nothing) (foldr g Nothing)
+      where g (Just xs) mb2 = Just xs
+            g m2 (Just xs)  = Just xs 
+            g _  _          = Nothing
+
+
+nivelNGT :: GTree a -> Int -> [a]
+nivelNGT = foldGT (\x r n -> if n==0 then [x] else r (n-1))
+                  (\fs n -> foldr ((++) . flip apply n) [] fs)
+
+apply :: (a -> b) -> a -> b 
+apply f x = f x
+
+
