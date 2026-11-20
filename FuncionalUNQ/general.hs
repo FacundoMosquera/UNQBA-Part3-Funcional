@@ -1,4 +1,5 @@
 import Data.Char (ord)
+import Prelude hiding (flip)
 twice :: (a -> a) -> a -> a
 twice f x =  f (f x)
 
@@ -376,3 +377,83 @@ El return queda sin cambios.
         - Todo lo que requiera efecto se "traslada" hacia dentro de la mónada.
         - El uso de la mónada se puede realizar al final, para obtener el resultado.
 -}
+
+
+type Gramos = Int 
+type Nombre = String 
+data Sabor = Dulce | Neutro | Salado | Amargo | Acido 
+
+
+data Receta = Ingrediente Nombre Gramos [Sabor]
+            | Sustituto ([Sabor] -> Bool) Receta Receta 
+            | Mezcla Receta Receta 
+            | Montaje Receta Receta Receta 
+
+
+foldReceta :: (Nombre -> Gramos -> [Sabor] -> b) -> (([Sabor] -> Bool) -> b -> b -> b) -> (b -> b -> b) -> (b -> b -> b -> b) -> Receta -> b 
+foldReceta f g h p (Ingrediente n gr ss) = f n gr ss
+foldReceta f g h p (Sustituto c o a)     = g c (foldReceta f g h p o) (foldReceta f g h p a)
+foldReceta f g h p (Mezcla r1 r2)        = h (foldReceta f g h p r1) (foldReceta f g h p r2)
+foldReceta f g h p (Montaje r1 r2 r3)    = p (foldReceta f g h p r1) (foldReceta f g h p r2) (foldReceta f g h p r3)
+
+
+recReceta :: (Nombre -> Gramos -> [Sabor] -> b) -> (([Sabor] -> Bool) -> Receta -> Receta -> b -> b -> b) -> 
+               (Receta -> Receta -> b -> b -> b) -> (Receta -> Receta -> Receta -> b -> b -> b -> b) -> Receta -> b
+recReceta f g h p (Ingrediente n gr ss) = f n gr ss
+recReceta f g h p (Sustituto c o a)     = g c o a (recReceta f g h p o) (recReceta f g h p a)
+recReceta f g h p (Mezcla r1 r2)        = h r1 r2 (recReceta f g h p r1) (recReceta f g h p r2)
+recReceta f g h p (Montaje r1 r2 r3)    = p r1 r2 r3 (recReceta f g h p r1) (recReceta f g h p r2) (recReceta f g h p r3)
+
+
+sortBy :: (a -> a -> Ordering) -> [a] -> [a]
+sortBy = undefined
+
+updateFAll :: Eq a => (b -> b -> b) -> [(a,b)] -> [(a,b)] -> [(a,b)]
+updateFAll f l1 l2 = foldr (\(k,v) r xs -> updateF f k v (r xs)) id l2 l1
+
+updateF :: Eq a => (b -> b -> b) -> a -> b -> [(a,b)] -> [(a,b)]
+updateF f k v = recr [(k,v)] (\(k',v') xs r -> if k==k'
+                                                then (k, f v v') : xs
+                                                else (k', v') : r)
+
+
+
+listaDeCompras :: Receta -> [(Nombre, Gramos)]
+listaDeCompras r = sortBy (\p1 p2 -> compare (fst p1) (fst p2)) (listaDesordenada r)
+
+
+
+
+listaDesordenada :: Receta -> [(Nombre, Gramos)]
+listaDesordenada = foldReceta f g h p 
+        where f n gr ss  = [(n, gr)]
+              g c l1 l2  = updateFAll (+) l1 l2 
+              h l1 l2    = updateFAll (+) l1 l2 
+              p l1 l2 l3 = updateFAll (+) (updateFAll (+) l1 l2) l3
+
+
+alcanzaDespensa :: [(Nombre, Gramos)] -> Receta -> Bool 
+alcanzaDespensa d r = fst (maybeDespensa d r)
+
+maybeDespensa :: [(Nombre, Gramos)] -> Receta -> (Bool, [(Nombre, Gramos)])
+maybeDespensa d = flip (foldReceta f g h p) d
+        where f n gr ss d = case lookup n d of 
+                             Nothing -> (False, d)
+                             Just x  -> if x >= gr 
+                                        then (True, updateF const n (x-gr) d)
+                                        else (False, d)
+              g c fr1 fr2 d = let (b,d') = fr1 d 
+                              in if b 
+                                 then fr2 d'
+                                 else (b,d')
+
+              h fr1 fr2 d  = let (b,d') = fr1 d 
+                              in if b
+                                  then fr2 d'
+                                  else (b,d')
+
+              p fr1 fr2 fr3 d = case fr1 d of 
+                                 (False, _) -> (False, d)
+                                 (True, d') -> case fr2 d' of 
+                                                (False, _) -> (False, d')
+                                                (True, d'') -> fr3 d''
